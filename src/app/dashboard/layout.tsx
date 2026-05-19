@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, TrendingUp, Copy, Briefcase,
@@ -23,10 +25,36 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
+
+  if (loading) {
+    return (
+      <div className="pt-16 min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-[#D4A843] border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    router.push("/login")
+    return null
+  }
 
   return (
     <div className="pt-16 min-h-screen flex">
       <aside className="hidden lg:flex w-64 flex-col bg-[#1A1D29]/50 border-r border-white/5 p-4 fixed top-16 bottom-0">
+        <div className="text-sm text-[#A0A0B0] px-4 pb-4 mb-4 border-b border-white/5">
+          {user.email}
+        </div>
+
         <nav className="space-y-1 flex-1">
           {sidebarLinks.map((link) => {
             const isActive = pathname === link.href
@@ -47,7 +75,11 @@ export default function DashboardLayout({
             )
           })}
         </nav>
-        <button className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-[#A0A0B0] hover:text-[#FF1744] hover:bg-white/5 transition-all">
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-[#A0A0B0] hover:text-[#FF1744] hover:bg-white/5 transition-all w-full"
+        >
           <LogOut size={18} />
           Log Out
         </button>

@@ -3,9 +3,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut, User } from "lucide-react"
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -18,6 +21,15 @@ const navLinks = [
 
 export function Header() {
   const [open, setOpen] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0B0F]/80 backdrop-blur-xl border-b border-white/5">
@@ -27,9 +39,9 @@ export function Header() {
             <Image
               src="/images/tradex-logo.svg"
               alt="TradeX"
-              width={140}
-              height={35}
-              className="h-8 w-auto"
+              width={100}
+              height={28}
+              className="h-7 w-auto"
               priority
             />
           </Link>
@@ -47,12 +59,31 @@ export function Header() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Log In</Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="primary" size="sm">Get Started</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    <User size={16} className="mr-1.5" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <button onClick={handleLogout}>
+                  <Button variant="outline" size="sm">
+                    <LogOut size={16} className="mr-1.5" />
+                    Log Out
+                  </Button>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">Log In</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="primary" size="sm">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -80,12 +111,25 @@ export function Header() {
             </Link>
           ))}
           <div className="flex gap-3 pt-3">
-            <Link href="/login" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full">Log In</Button>
-            </Link>
-            <Link href="/register" className="flex-1">
-              <Button variant="primary" size="sm" className="w-full">Get Started</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard" className="flex-1" onClick={() => setOpen(false)}>
+                  <Button variant="secondary" size="sm" className="w-full">Dashboard</Button>
+                </Link>
+                <button onClick={handleLogout} className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full">Log Out</Button>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="flex-1" onClick={() => setOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full">Log In</Button>
+                </Link>
+                <Link href="/register" className="flex-1" onClick={() => setOpen(false)}>
+                  <Button variant="primary" size="sm" className="w-full">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,10 +1,66 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/client"
 
 export default function RegisterPage() {
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "" })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  function update(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters")
+      setLoading(false)
+      return
+    }
+
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          first_name: form.firstName,
+          last_name: form.lastName,
+          phone: form.phone,
+        },
+      },
+    })
+
+    if (authError) {
+      setError(authError.message)
+      setLoading(false)
+      return
+    }
+
+    if (data.user) {
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        email: form.email,
+        first_name: form.firstName,
+        last_name: form.lastName,
+        phone: form.phone,
+      })
+    }
+
+    router.push("/dashboard")
+    router.refresh()
+  }
+
   return (
     <div className="pt-32 pb-24">
       <div className="max-w-md mx-auto px-4">
@@ -14,13 +70,22 @@ export default function RegisterPage() {
             <p className="text-sm text-[#A0A0B0] mt-2">Start trading in minutes</p>
           </div>
 
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-xl bg-[#FF1744]/10 border border-[#FF1744]/20 text-sm text-[#FF1744]">
+                {error}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">First Name</label>
                 <input
                   type="text"
+                  value={form.firstName}
+                  onChange={(e) => update("firstName", e.target.value)}
                   placeholder="John"
+                  required
                   className="w-full px-4 py-3 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm placeholder:text-[#A0A0B0] focus:outline-none focus:border-[#D4A843]/50"
                 />
               </div>
@@ -28,7 +93,10 @@ export default function RegisterPage() {
                 <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Last Name</label>
                 <input
                   type="text"
+                  value={form.lastName}
+                  onChange={(e) => update("lastName", e.target.value)}
                   placeholder="Doe"
+                  required
                   className="w-full px-4 py-3 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm placeholder:text-[#A0A0B0] focus:outline-none focus:border-[#D4A843]/50"
                 />
               </div>
@@ -37,7 +105,10 @@ export default function RegisterPage() {
               <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Email</label>
               <input
                 type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
                 placeholder="you@example.com"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm placeholder:text-[#A0A0B0] focus:outline-none focus:border-[#D4A843]/50"
               />
             </div>
@@ -45,6 +116,8 @@ export default function RegisterPage() {
               <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Phone Number</label>
               <input
                 type="tel"
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value)}
                 placeholder="+254 7XX XXX XXX"
                 className="w-full px-4 py-3 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm placeholder:text-[#A0A0B0] focus:outline-none focus:border-[#D4A843]/50"
               />
@@ -53,12 +126,18 @@ export default function RegisterPage() {
               <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Password</label>
               <input
                 type="password"
+                value={form.password}
+                onChange={(e) => update("password", e.target.value)}
                 placeholder="Create a strong password"
+                required
+                minLength={6}
                 className="w-full px-4 py-3 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm placeholder:text-[#A0A0B0] focus:outline-none focus:border-[#D4A843]/50"
               />
             </div>
 
-            <Button variant="primary" className="w-full">Create Account</Button>
+            <Button variant="primary" className="w-full" disabled={loading}>
+              {loading ? "Creating account..." : "Create Account"}
+            </Button>
           </form>
 
           <p className="text-center text-sm text-[#A0A0B0] mt-6">
