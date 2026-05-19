@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { getRealTimePrice } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
 export async function POST(
@@ -20,9 +21,10 @@ export async function POST(
   if (trade.mt_accounts.user_id !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   if (trade.status !== "open") return NextResponse.json({ error: "Trade already closed" }, { status: 400 })
 
-  const closePrice = Number(trade.open_price) * (1 + (Math.random() - 0.45) * 0.02)
-  const pipValue = trade.symbol.includes("JPY") ? 0.01 : 0.0001
-  const pipDiff = Math.abs(closePrice - Number(trade.open_price)) / pipValue
+  const price = await getRealTimePrice(trade.symbol)
+  if (!price) return NextResponse.json({ error: "Could not fetch live price" }, { status: 503 })
+
+  const closePrice = trade.type === "buy" ? price.bid : price.ask
   const direction = trade.type === "buy" ? 1 : -1
   const profit = Number((direction * (closePrice - Number(trade.open_price)) * Number(trade.volume) * 100000).toFixed(2))
 
@@ -30,7 +32,7 @@ export async function POST(
     .from("trades")
     .update({
       status: "closed",
-      close_price: Number(closePrice.toFixed(5)),
+      close_price: closePrice,
       profit,
       closed_at: new Date().toISOString(),
     })
@@ -49,6 +51,8 @@ export async function POST(
   return NextResponse.json({
     success: true,
     profit,
-    close_price: Number(closePrice.toFixed(5)),
+    close_price: closePrice,
+    bid: price.bid,
+    ask: price.ask,
   })
 }

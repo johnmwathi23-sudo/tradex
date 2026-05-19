@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -33,10 +33,20 @@ type Trade = {
   volume: number
   open_price: number
   current_price: number
+  bid: number
+  ask: number
   unrealized_pnl: number
   profit: number | null
   status: string
   opened_at: string
+}
+
+type Price = {
+  symbol: string
+  bid: number
+  ask: number
+  spread: number
+  source: string
 }
 
 const categories = ["forex", "commodities", "indices", "crypto"]
@@ -53,6 +63,16 @@ export default function TradingPage() {
   const [placing, setPlacing] = useState(false)
   const [message, setMessage] = useState("")
   const [closingId, setClosingId] = useState<string | null>(null)
+  const [price, setPrice] = useState<Price | null>(null)
+  const priceRef = useRef<HTMLDivElement>(null)
+
+  const fetchPrice = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/mt/price?symbol=${selectedInstrument}`)
+      const data = await res.json()
+      if (data.bid) setPrice(data)
+    } catch {}
+  }, [selectedInstrument])
 
   const fetchTrades = useCallback(async () => {
     try {
@@ -61,6 +81,11 @@ export default function TradingPage() {
       setOpenTrades((Array.isArray(data) ? data : []).filter((t: Trade) => t.status === "open"))
     } catch {}
   }, [])
+
+  const fetchAll = useCallback(() => {
+    fetchTrades()
+    fetchPrice()
+  }, [fetchTrades, fetchPrice])
 
   useEffect(() => {
     fetch("/api/mt/accounts")
@@ -72,15 +97,21 @@ export default function TradingPage() {
         if (def) setSelectedAccount(def.id)
         else if (list.length > 0) setSelectedAccount(list[0].id)
       })
-      .catch(() => {})
 
     fetch("/api/mt/instruments")
       .then((r) => r.json())
       .then((data) => setInstruments(Array.isArray(data) ? data : []))
-      .catch(() => {})
 
-    fetchTrades()
-  }, [fetchTrades])
+    fetchAll()
+
+    const interval = setInterval(fetchAll, 5000)
+    return () => clearInterval(interval)
+  }, [fetchAll])
+
+  useEffect(() => {
+    setPrice(null)
+    fetchPrice()
+  }, [selectedInstrument, fetchPrice])
 
   const filteredInstruments = instruments.filter((i) => i.category === activeCategory)
 
@@ -96,7 +127,7 @@ export default function TradingPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Order placed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${data.open_price}`)
+      setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid}`)
       fetchTrades()
       fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
     } catch (err: any) {
@@ -112,7 +143,7 @@ export default function TradingPage() {
       const res = await fetch(`/api/mt/orders/${tradeId}/close`, { method: "POST" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Position closed: ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)}`)
+      setMessage(`Closed: ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)} (bid: ${data.bid}, ask: ${data.ask})`)
       fetchTrades()
       fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
     } catch (err: any) {
@@ -123,6 +154,7 @@ export default function TradingPage() {
   }
 
   const activeInstrument = instruments.find((i) => i.symbol === selectedInstrument)
+  const priceColor = price && price.bid > (price.ask - price.spread) * 0.999 ? "text-[#00C853]" : "text-[#F5F5F5]"
 
   return (
     <div>
@@ -155,6 +187,18 @@ export default function TradingPage() {
         <Card className="lg:col-span-2 p-0 overflow-hidden">
           <div className="h-[500px] bg-[#0A0B0F] relative">
             <TradingViewChart symbol={selectedInstrument} />
+            {price && (
+              <div ref={priceRef} className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10">
+                <div className="text-lg font-bold font-mono text-[#F5F5F5]">{price.bid.toFixed(5)}</div>
+                <div className="flex gap-3 text-xs text-[#A0A0B0] mt-0.5">
+                  <span>Ask: <span className="text-[#FF1744] font-mono">{price.ask.toFixed(5)}</span></span>
+                  <span>Spread: <span className="text-[#D4A843] font-mono">{price.spread.toFixed(5)}</span></span>
+                  <span className={price.source === "live" ? "text-[#00C853]" : "text-[#D4A843]"}>
+                    {price.source === "live" ? "LIVE" : "REF"}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-3 border-t border-white/5">
@@ -208,6 +252,13 @@ export default function TradingPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                {price && (
+                  <div className="flex justify-between text-xs px-1">
+                    <span className="text-[#00C853] font-mono">Bid {price.bid.toFixed(5)}</span>
+                    <span className="text-[#FF1744] font-mono">Ask {price.ask.toFixed(5)}</span>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-xs text-[#A0A0B0] block mb-1">Instrument</label>
                   <select
@@ -227,22 +278,22 @@ export default function TradingPage() {
                     className={cn(
                       "px-3 py-3 rounded-lg text-sm font-semibold transition",
                       orderType === "buy"
-                        ? "bg-[#00C853] text-white"
+                        ? "bg-[#00C853] text-white shadow-[0_0_12px_rgba(0,200,83,0.3)]"
                         : "bg-[#00C853]/15 text-[#00C853] hover:bg-[#00C853]/25"
                     )}
                   >
-                    Buy
+                    Buy {price ? `@ ${price.ask.toFixed(5)}` : ""}
                   </button>
                   <button
                     onClick={() => setOrderType("sell")}
                     className={cn(
                       "px-3 py-3 rounded-lg text-sm font-semibold transition",
                       orderType === "sell"
-                        ? "bg-[#FF1744] text-white"
+                        ? "bg-[#FF1744] text-white shadow-[0_0_12px_rgba(255,23,68,0.3)]"
                         : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
                     )}
                   >
-                    Sell
+                    Sell {price ? `@ ${price.bid.toFixed(5)}` : ""}
                   </button>
                 </div>
 
@@ -257,8 +308,8 @@ export default function TradingPage() {
                   />
                 </div>
 
-                <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing}>
-                  {placing ? "Placing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
+                <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing || !price}>
+                  {placing ? "Executing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
                 </Button>
 
                 {message && (
@@ -290,7 +341,7 @@ export default function TradingPage() {
                         disabled={closingId === t.id}
                         className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
                       >
-                        {closingId === t.id ? "..." : "Close"}
+                        {closingId === t.id ? "..." : `Close @ ${t.type === "buy" ? (t.bid || "?") : (t.ask || "?")}`}
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
