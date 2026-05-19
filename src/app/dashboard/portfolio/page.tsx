@@ -10,6 +10,8 @@ type Trade = {
   type: "buy" | "sell"
   volume: number
   open_price: number
+  current_price: number
+  unrealized_pnl: number
   close_price: number | null
   profit: number | null
   status: string
@@ -29,7 +31,7 @@ export default function PortfolioPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const totalPnl = trades.reduce((sum, t) => sum + (t.profit || 0), 0)
+  const totalPnl = trades.reduce((sum, t) => sum + (t.status === "open" ? (t.unrealized_pnl || 0) : (t.profit || 0)), 0)
   const openTrades = trades.filter((t) => t.status === "open")
   const closedTrades = trades.filter((t) => t.status === "closed")
 
@@ -88,7 +90,9 @@ export default function PortfolioPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-[#F5F5F5] capitalize">{t.status}</div>
+                  <div className={cn("text-sm font-semibold", t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                    {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl?.toFixed(2) ?? "0.00"}
+                  </div>
                   <div className="text-xs text-[#A0A0B0]">{new Date(t.opened_at).toLocaleDateString()}</div>
                 </div>
               </div>

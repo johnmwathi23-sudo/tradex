@@ -32,6 +32,8 @@ type Trade = {
   type: "buy" | "sell"
   volume: number
   open_price: number
+  current_price: number
+  unrealized_pnl: number
   profit: number | null
   status: string
   opened_at: string
@@ -280,20 +282,28 @@ export default function TradingPage() {
             ) : (
               <div className="space-y-2">
                 {openTrades.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-[#0A0B0F]">
-                    <div>
+                  <div key={t.id} className="p-2 rounded-lg bg-[#0A0B0F]">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</div>
-                      <div className="text-xs text-[#A0A0B0]">
-                        {t.type.toUpperCase()} · {t.volume} lots @ {t.open_price}
-                      </div>
+                      <button
+                        onClick={() => closeTrade(t.id)}
+                        disabled={closingId === t.id}
+                        className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
+                      >
+                        {closingId === t.id ? "..." : "Close"}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => closeTrade(t.id)}
-                      disabled={closingId === t.id}
-                      className="px-3 py-1.5 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
-                    >
-                      {closingId === t.id ? "..." : "Close"}
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#A0A0B0]">
+                        {t.type.toUpperCase()} · {t.volume} lots · {t.open_price}
+                      </span>
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]"
+                      )}>
+                        {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

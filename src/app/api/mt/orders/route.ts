@@ -1,6 +1,17 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
+function simulateCurrentPrice(trade: any): { current_price: number; unrealized_pnl: number } {
+  const seed = trade.id.split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0)
+  const drift = ((seed % 200) - 100) / 10000
+  const currentPrice = Number(trade.open_price) + drift
+  const pipValue = trade.symbol?.includes("JPY") ? 0.01 : 0.0001
+  const pipDiff = Math.abs(currentPrice - Number(trade.open_price)) / pipValue
+  const direction = trade.type === "buy" ? 1 : -1
+  const unrealizedPnl = Number((direction * (currentPrice - Number(trade.open_price)) * Number(trade.volume) * 100000).toFixed(2))
+  return { current_price: Number(currentPrice.toFixed(5)), unrealized_pnl: unrealizedPnl }
+}
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,7 +24,15 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(50)
 
-  return NextResponse.json(data ?? [])
+  const enriched = (data ?? []).map((t: any) => {
+    if (t.status === "open") {
+      const sim = simulateCurrentPrice(t)
+      return { ...t, current_price: sim.current_price, unrealized_pnl: sim.unrealized_pnl }
+    }
+    return { ...t, current_price: t.close_price || t.open_price, unrealized_pnl: t.profit || 0 }
+  })
+
+  return NextResponse.json(enriched)
 }
 
 export async function POST(req: Request) {
