@@ -7,12 +7,13 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, TrendingUp, Copy, Briefcase,
-  Repeat, Settings, LogOut, Wallet, ArrowDownLeft
+  Repeat, Settings, LogOut, Wallet, ArrowDownLeft, Terminal
 } from "lucide-react"
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/trading", label: "Trading", icon: TrendingUp },
+  { href: "/dashboard/mt-accounts", label: "MT4/MT5", icon: Terminal },
   { href: "/dashboard/copy-trading", label: "Copy Trading", icon: Copy },
   { href: "/dashboard/deposit", label: "Deposit", icon: ArrowDownLeft },
   { href: "/dashboard/withdrawal", label: "Withdraw", icon: Wallet },
