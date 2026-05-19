@@ -1,10 +1,27 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, DollarSign, Activity, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { TrendingUp, TrendingDown, DollarSign, Activity, Users, Copy } from "lucide-react"
+
+type Subscription = {
+  id: string
+  master_trader: { id: string; display_name: string; roi: number; risk_level: string }
+  allocation_percentage: number
+  allocated_amount: number
+}
 
 export default function DashboardPage() {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+
+  useEffect(() => {
+    fetch("/api/copy-trading/my-subscriptions")
+      .then((r) => r.json())
+      .then((data) => setSubscriptions(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Dashboard Overview</h1>
@@ -62,11 +79,30 @@ export default function DashboardPage() {
 
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-[#F5F5F5] mb-4">Copy Trading</h3>
-          <div className="text-center py-8">
-            <Users size={40} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
-            <p className="text-sm text-[#A0A0B0]">You are not following any traders yet</p>
-            <p className="text-xs text-[#A0A0B0] mt-1">Browse top performers and start copying</p>
-          </div>
+          {subscriptions.length === 0 ? (
+            <div className="text-center py-8">
+              <Copy size={40} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
+              <p className="text-sm text-[#A0A0B0]">You are not following any traders yet</p>
+              <p className="text-xs text-[#A0A0B0] mt-1">Browse top performers and start copying</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {subscriptions.map((sub) => (
+                <div key={sub.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] text-xs font-bold">
+                      {sub.master_trader.display_name[0]}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-[#F5F5F5]">{sub.master_trader.display_name}</div>
+                      <div className="text-xs text-[#A0A0B0]">{sub.allocation_percentage}% allocation</div>
+                    </div>
+                  </div>
+                  <span className="text-sm font-semibold text-[#00C853]">+{sub.master_trader.roi}%</span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>
