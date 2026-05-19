@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  turbotrace: { enabled: false },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
