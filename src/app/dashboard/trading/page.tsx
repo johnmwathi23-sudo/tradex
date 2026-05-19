@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import TradingViewChart from "@/components/trading-view-chart"
 
 type MtAccount = {
   id: string
@@ -108,18 +109,8 @@ export default function TradingPage() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="h-[420px] bg-[#0A0B0F] flex items-center justify-center relative">
-            {activeInstrument && (
-              <div className="absolute top-4 left-4 z-10">
-                <div className="text-lg font-bold text-[#F5F5F5]">{activeInstrument.symbol}</div>
-                <div className="text-xs text-[#A0A0B0]">{activeInstrument.name} · Spread: {activeInstrument.spread}</div>
-              </div>
-            )}
-            <div className="text-center">
-              <div className="text-5xl mb-3 opacity-30">📈</div>
-              <p className="text-sm text-[#A0A0B0]">TradingView Chart Widget</p>
-              <p className="text-xs text-[#A0A0B0] mt-1">Real-time charts will render here</p>
-            </div>
+          <div className="h-[500px] bg-[#0A0B0F] relative">
+            <TradingViewChart symbol={selectedInstrument} />
           </div>
 
           <div className="p-3 border-t border-white/5">
