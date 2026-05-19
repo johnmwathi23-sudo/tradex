@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -26,11 +26,23 @@ type Instrument = {
   digits: number
 }
 
+type Trade = {
+  id: string
+  symbol: string
+  type: "buy" | "sell"
+  volume: number
+  open_price: number
+  profit: number | null
+  status: string
+  opened_at: string
+}
+
 const categories = ["forex", "commodities", "indices", "crypto"]
 
 export default function TradingPage() {
   const [accounts, setAccounts] = useState<MtAccount[]>([])
   const [instruments, setInstruments] = useState<Instrument[]>([])
+  const [openTrades, setOpenTrades] = useState<Trade[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [selectedInstrument, setSelectedInstrument] = useState("EURUSD")
   const [activeCategory, setActiveCategory] = useState("forex")
@@ -38,6 +50,15 @@ export default function TradingPage() {
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
   const [placing, setPlacing] = useState(false)
   const [message, setMessage] = useState("")
+  const [closingId, setClosingId] = useState<string | null>(null)
+
+  const fetchTrades = useCallback(async () => {
+    try {
+      const res = await fetch("/api/mt/orders")
+      const data = await res.json()
+      setOpenTrades((Array.isArray(data) ? data : []).filter((t: Trade) => t.status === "open"))
+    } catch {}
+  }, [])
 
   useEffect(() => {
     fetch("/api/mt/accounts")
@@ -55,11 +76,11 @@ export default function TradingPage() {
       .then((r) => r.json())
       .then((data) => setInstruments(Array.isArray(data) ? data : []))
       .catch(() => {})
-  }, [])
 
-  const filteredInstruments = instruments.filter(
-    (i) => i.category === activeCategory
-  )
+    fetchTrades()
+  }, [fetchTrades])
+
+  const filteredInstruments = instruments.filter((i) => i.category === activeCategory)
 
   async function placeOrder() {
     if (!selectedAccount || !selectedInstrument || !volume) return
@@ -69,20 +90,33 @@ export default function TradingPage() {
       const res = await fetch("/api/mt/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mt_account_id: selectedAccount,
-          symbol: selectedInstrument,
-          type: orderType,
-          volume,
-        }),
+        body: JSON.stringify({ mt_account_id: selectedAccount, symbol: selectedInstrument, type: orderType, volume }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`${orderType === "buy" ? "Buy" : "Sell"} order placed: ${selectedInstrument} @ ${data.open_price}`)
+      setMessage(`Order placed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${data.open_price}`)
+      fetchTrades()
+      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
     } finally {
       setPlacing(false)
+    }
+  }
+
+  async function closeTrade(tradeId: string) {
+    setClosingId(tradeId)
+    try {
+      const res = await fetch(`/api/mt/orders/${tradeId}/close`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setMessage(`Position closed: ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)}`)
+      fetchTrades()
+      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
+    } catch (err: any) {
+      setMessage(`Error: ${err.message}`)
+    } finally {
+      setClosingId(null)
     }
   }
 
@@ -92,19 +126,27 @@ export default function TradingPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-[#F5F5F5]">Trading Terminal</h1>
-        {accounts.length > 0 && (
-          <select
-            value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
-            className="px-4 py-2 rounded-xl bg-[#1A1D29]/50 border border-white/10 text-[#F5F5F5] text-sm"
+        <div className="flex items-center gap-3">
+          {accounts.length > 0 && (
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="px-4 py-2 rounded-xl bg-[#1A1D29]/50 border border-white/10 text-[#F5F5F5] text-sm"
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.platform.toUpperCase()} #{a.login_id} ({a.account_type}) - ${Number(a.balance).toFixed(2)}
+                </option>
+              ))}
+            </select>
+          )}
+          <a
+            href="/dashboard/mt-accounts"
+            className="px-4 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10"
           >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.platform.toUpperCase()} #{a.login_id} ({a.account_type}) - ${Number(a.balance).toFixed(2)}
-              </option>
-            ))}
-          </select>
-        )}
+            Manage Accounts
+          </a>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -149,89 +191,115 @@ export default function TradingPage() {
           </div>
         </Card>
 
-        <Card className="p-4">
-          <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">Quick Order</h3>
-          {!selectedAccount ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-[#A0A0B0]">No MT4/MT5 account connected</p>
-              <a
-                href="/dashboard/mt-accounts"
-                className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20"
-              >
-                Connect Account
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-[#A0A0B0] block mb-1">Instrument</label>
-                <select
-                  value={selectedInstrument}
-                  onChange={(e) => setSelectedInstrument(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
+        <div className="space-y-4">
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">Quick Order</h3>
+            {!selectedAccount ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-[#A0A0B0]">No MT4/MT5 account connected</p>
+                <a
+                  href="/dashboard/mt-accounts"
+                  className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20"
                 >
-                  {instruments.map((i) => (
-                    <option key={i.id} value={i.symbol}>{i.symbol}</option>
-                  ))}
-                </select>
+                  Connect Account
+                </a>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setOrderType("buy")}
-                  className={cn(
-                    "px-3 py-3 rounded-lg text-sm font-semibold transition",
-                    orderType === "buy"
-                      ? "bg-[#00C853] text-white"
-                      : "bg-[#00C853]/15 text-[#00C853] hover:bg-[#00C853]/25"
-                  )}
-                >
-                  Buy
-                </button>
-                <button
-                  onClick={() => setOrderType("sell")}
-                  className={cn(
-                    "px-3 py-3 rounded-lg text-sm font-semibold transition",
-                    orderType === "sell"
-                      ? "bg-[#FF1744] text-white"
-                      : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
-                  )}
-                >
-                  Sell
-                </button>
-              </div>
-
-              <div>
-                <label className="text-xs text-[#A0A0B0] block mb-1">Volume (Lots)</label>
-                <input
-                  type="number"
-                  value={volume}
-                  onChange={(e) => setVolume(e.target.value)}
-                  step="0.01" min="0.01" max="100"
-                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
-                />
-              </div>
-
-              <Button
-                variant="primary"
-                className="w-full"
-                onClick={placeOrder}
-                disabled={placing}
-              >
-                {placing ? "Placing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
-              </Button>
-
-              {message && (
-                <div className={cn(
-                  "p-2 rounded-lg text-xs text-center",
-                  message.startsWith("Error") ? "bg-[#FF1744]/10 text-[#FF1744]" : "bg-[#00C853]/10 text-[#00C853]"
-                )}>
-                  {message}
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">Instrument</label>
+                  <select
+                    value={selectedInstrument}
+                    onChange={(e) => setSelectedInstrument(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
+                  >
+                    {instruments.map((i) => (
+                      <option key={i.id} value={i.symbol}>{i.symbol}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
-          )}
-        </Card>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setOrderType("buy")}
+                    className={cn(
+                      "px-3 py-3 rounded-lg text-sm font-semibold transition",
+                      orderType === "buy"
+                        ? "bg-[#00C853] text-white"
+                        : "bg-[#00C853]/15 text-[#00C853] hover:bg-[#00C853]/25"
+                    )}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => setOrderType("sell")}
+                    className={cn(
+                      "px-3 py-3 rounded-lg text-sm font-semibold transition",
+                      orderType === "sell"
+                        ? "bg-[#FF1744] text-white"
+                        : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
+                    )}
+                  >
+                    Sell
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">Volume (Lots)</label>
+                  <input
+                    type="number"
+                    value={volume}
+                    onChange={(e) => setVolume(e.target.value)}
+                    step="0.01" min="0.01" max="100"
+                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
+                  />
+                </div>
+
+                <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing}>
+                  {placing ? "Placing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
+                </Button>
+
+                {message && (
+                  <div className={cn(
+                    "p-2 rounded-lg text-xs text-center",
+                    message.startsWith("Error") ? "bg-[#FF1744]/10 text-[#FF1744]" : "bg-[#00C853]/10 text-[#00C853]"
+                  )}>
+                    {message}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">
+              Open Positions ({openTrades.length})
+            </h3>
+            {openTrades.length === 0 ? (
+              <p className="text-xs text-[#A0A0B0] text-center py-4">No open positions</p>
+            ) : (
+              <div className="space-y-2">
+                {openTrades.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-[#0A0B0F]">
+                    <div>
+                      <div className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</div>
+                      <div className="text-xs text-[#A0A0B0]">
+                        {t.type.toUpperCase()} · {t.volume} lots @ {t.open_price}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => closeTrade(t.id)}
+                      disabled={closingId === t.id}
+                      className="px-3 py-1.5 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
+                    >
+                      {closingId === t.id ? "..." : "Close"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   )
