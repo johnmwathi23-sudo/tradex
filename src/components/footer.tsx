@@ -42,7 +42,7 @@ export function Footer() {
               className="h-7 w-auto mb-4"
             />
             <p className="text-sm text-[#A0A0B0] leading-relaxed">
-              Trade Africa, Trade World. Professional forex and copy trading platform trusted by traders across the globe.
+              Professional forex and copy trading platform trusted by traders across the globe.
             </p>
           </div>
 

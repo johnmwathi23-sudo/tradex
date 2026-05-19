@@ -10,7 +10,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="mt-4 text-lg text-[#A0A0B0]">
-            Empowering traders across Africa and the world with cutting-edge technology and elite market conditions
+            Empowering traders worldwide with cutting-edge technology and elite market conditions
           </p>
         </div>
 
@@ -23,9 +23,9 @@ export default function AboutPage() {
               pricing, and the ability to copy proven successful strategies.
             </p>
             <p className="text-[#A0A0B0] leading-relaxed mb-6">
-              Headquartered with a global vision and African roots, we understand the unique needs of traders
-              in emerging markets. From M-Pesa deposits to local payment solutions, every feature is designed
-              with our community in mind.
+              Headquartered with a global vision, we understand the unique needs of traders
+              in every market. From M-Pesa deposits to local payment solutions, every feature is designed
+              with our global community in mind.
             </p>
             <p className="text-[#A0A0B0] leading-relaxed">
               Our copy trading platform connects novice traders with verified professionals, creating an
