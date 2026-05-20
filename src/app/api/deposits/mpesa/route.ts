@@ -18,77 +18,81 @@ async function getMpesaToken(): Promise<string> {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const { phone, amount } = await req.json()
-  if (!phone || !amount || amount < 10) {
-    return NextResponse.json({ error: "Invalid phone or amount (min $10)" }, { status: 400 })
-  }
-
-  const token = await getMpesaToken()
-  const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14)
-  const password = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString("base64")
-
-  const stkResponse = await fetch(
-    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        BusinessShortCode: MPESA_SHORTCODE,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(amount),
-        PartyA: phone.replace(/\D/g, ""),
-        PartyB: MPESA_SHORTCODE,
-        PhoneNumber: phone.replace(/\D/g, ""),
-        CallBackURL: `${MPESA_CALLBACK_URL}/api/deposits/mpesa/callback`,
-        AccountReference: `TRADEX_${user.id.slice(0, 8)}`,
-        TransactionDesc: "TradeX Deposit",
-      }),
+    const { phone, amount } = await req.json()
+    if (!phone || !amount || amount < 10) {
+      return NextResponse.json({ error: "Invalid phone or amount (min $10)" }, { status: 400 })
     }
-  )
-  const stkData = await stkResponse.json()
 
-  if (stkData.ResponseCode !== "0") {
-    return NextResponse.json({ error: stkData.ResponseDescription || "M-Pesa request failed" }, { status: 400 })
-  }
+    const token = await getMpesaToken()
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14)
+    const password = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString("base64")
 
-  const { data: tx } = await supabase
-    .from("transactions")
-    .insert({
+    const stkResponse = await fetch(
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          BusinessShortCode: MPESA_SHORTCODE,
+          Password: password,
+          Timestamp: timestamp,
+          TransactionType: "CustomerPayBillOnline",
+          Amount: Math.round(amount),
+          PartyA: phone.replace(/\D/g, ""),
+          PartyB: MPESA_SHORTCODE,
+          PhoneNumber: phone.replace(/\D/g, ""),
+          CallBackURL: `${MPESA_CALLBACK_URL}/api/deposits/mpesa/callback`,
+          AccountReference: `TRADEX_${user.id.slice(0, 8)}`,
+          TransactionDesc: "TradeX Deposit",
+        }),
+      }
+    )
+    const stkData = await stkResponse.json()
+
+    if (stkData.ResponseCode !== "0") {
+      return NextResponse.json({ error: stkData.ResponseDescription || "M-Pesa request failed" }, { status: 400 })
+    }
+
+    const { data: tx } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        type: "deposit",
+        method: "mpesa",
+        amount,
+        currency: "USD",
+        status: "processing",
+        reference: stkData.MerchantRequestID,
+        description: `M-Pesa deposit from ${phone}`,
+      })
+      .select()
+      .single()
+
+    await supabase.from("mpesa_transactions").insert({
+      transaction_id: tx.id,
       user_id: user.id,
-      type: "deposit",
-      method: "mpesa",
+      phone_number: phone.replace(/\D/g, ""),
       amount,
-      currency: "USD",
-      status: "processing",
-      reference: stkData.MerchantRequestID,
-      description: `M-Pesa deposit from ${phone}`,
+      merchant_request_id: stkData.MerchantRequestID,
+      checkout_request_id: stkData.CheckoutRequestID,
+      type: "deposit",
+      status: "pending",
     })
-    .select()
-    .single()
 
-  await supabase.from("mpesa_transactions").insert({
-    transaction_id: tx.id,
-    user_id: user.id,
-    phone_number: phone.replace(/\D/g, ""),
-    amount,
-    merchant_request_id: stkData.MerchantRequestID,
-    checkout_request_id: stkData.CheckoutRequestID,
-    type: "deposit",
-    status: "pending",
-  })
-
-  return NextResponse.json({
-    success: true,
-    message: "STK push sent. Check your phone to complete payment.",
-    checkoutRequestId: stkData.CheckoutRequestID,
-  })
+    return NextResponse.json({
+      success: true,
+      message: "STK push sent. Check your phone to complete payment.",
+      checkoutRequestId: stkData.CheckoutRequestID,
+    })
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 })
+  }
 }
