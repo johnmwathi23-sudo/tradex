@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { getRealTimePrice } from "./prices"
-import { fetchFinancialNews, type NewsItem } from "./news"
+import { fetchFinancialNews } from "./news"
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
 const SIGNAL_SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "XAUUSD", "BTCUSD", "ETHUSD", "USOIL", "SP500"]
@@ -39,7 +39,7 @@ async function getPrices(): Promise<PriceSnapshot[]> {
 export async function generateTradeSignal(): Promise<TradeSignal | null> {
   const [news, prices] = await Promise.all([fetchFinancialNews(), getPrices()])
 
-  if (prices.length === 0) return null
+  if (prices.length === 0) throw new Error("No market prices available")
 
   const headlines = news.slice(0, 15).map((n) => n.title)
 
@@ -47,7 +47,7 @@ export async function generateTradeSignal(): Promise<TradeSignal | null> {
     .map((p) => `${p.symbol}: Bid=${p.bid}, Ask=${p.ask}, Mid=${p.mid}`)
     .join("\n")
 
-  const newsContext = headlines.join("\n- ")
+  const newsContext = headlines.length ? headlines.join("\n- ") : "No recent news headlines available"
 
   const prompt = `You are AlphaTrader, a professional forex and crypto trading AI. Analyze the current market data and news, then recommend ONE high-confidence trade signal.
 
@@ -57,34 +57,26 @@ ${priceContext}
 RECENT NEWS HEADLINES:
 - ${newsContext}
 
-Based on this data, output ONLY a JSON object (no markdown, no code fences) with this exact structure:
-{
-  "symbol": "one of: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD, BTCUSD, ETHUSD, USOIL, SP500",
-  "direction": "buy or sell",
-  "confidence": 0-100,
-  "entryPriceMin": number,
-  "entryPriceMax": number,
-  "stopLoss": number,
-  "takeProfit": number,
-  "rationale": "brief explanation of the trade idea in 2-3 sentences",
-  "timeframe": "1h or 4h or 1d"
-}
+Based on this data, output ONLY a valid JSON object (no markdown, no code fences, no extra text before or after) with this exact structure:
+{"symbol":"one of: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD, BTCUSD, ETHUSD, USOIL, SP500","direction":"buy or sell","confidence":0-100,"entryPriceMin":number,"entryPriceMax":number,"stopLoss":number,"takeProfit":number,"rationale":"brief explanation in 2-3 sentences","timeframe":"1h or 4h or 1d"}
 
 Consider current price levels, market sentiment from news, technical positioning, and risk management (stop loss should be reasonable, take profit at least 1.5x the risk).`
 
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
-    const cleaned = text.replace(/```json\s*/i, "").replace(/```\s*$/i, "").trim()
-    const signal = JSON.parse(cleaned) as TradeSignal
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  const result = await model.generateContent(prompt)
+  const text = result.response.text().trim()
 
-    if (!signal.symbol || !signal.direction || !signal.confidence) return null
+  let cleaned = text
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+  if (jsonMatch) cleaned = jsonMatch[0]
 
-    return signal
-  } catch {
-    return null
+  const signal = JSON.parse(cleaned) as TradeSignal
+
+  if (!signal.symbol || !signal.direction || signal.confidence == null) {
+    throw new Error(`Invalid signal from AI: ${cleaned.slice(0, 200)}`)
   }
+
+  return signal
 }
 
 export async function getAIMarketSummary(): Promise<string> {
@@ -102,11 +94,7 @@ export async function getAIMarketSummary(): Promise<string> {
 Prices: ${priceContext}
 News: ${headlines.join(" | ")}`
 
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
-    const result = await model.generateContent(prompt)
-    return result.response.text().trim()
-  } catch {
-    return "AI analysis temporarily unavailable."
-  }
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  const result = await model.generateContent(prompt)
+  return result.response.text().trim()
 }

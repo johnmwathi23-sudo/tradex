@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Check, X, TrendingUp } from "lucide-react"
+import { Check, X, TrendingUp, Plus, UserPlus } from "lucide-react"
 
 type MasterTrader = {
   id: string
@@ -20,6 +20,10 @@ type MasterTrader = {
 export default function AdminTradersPage() {
   const [traders, setTraders] = useState<MasterTrader[]>([])
   const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState({ email: "", display_name: "", bio: "", risk_level: "medium" })
+  const [error, setError] = useState("")
+  const [creating, setCreating] = useState(false)
 
   async function fetchTraders() {
     try {
@@ -44,9 +48,114 @@ export default function AdminTradersPage() {
     } catch {}
   }
 
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    setCreating(true)
+    setError("")
+    try {
+      const res = await fetch("/api/admin/master-traders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setShowCreate(false)
+      setForm({ email: "", display_name: "", bio: "", risk_level: "medium" })
+      fetchTraders()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Master Trader Management</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-[#F5F5F5]">Master Trader Management</h1>
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] text-sm font-semibold hover:opacity-90 transition"
+        >
+          <UserPlus size={16} />
+          Add Trader
+        </button>
+      </div>
+
+      {showCreate && (
+        <Card className="p-5 mb-6">
+          <form onSubmit={handleCreate} className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#F5F5F5]">Create New Master Trader</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-[#A0A0B0] block mb-1">User Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="user@example.com"
+                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-sm text-[#F5F5F5] focus:border-[#D4A843]/50 focus:outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#A0A0B0] block mb-1">Display Name</label>
+                <input
+                  type="text"
+                  value={form.display_name}
+                  onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+                  placeholder="ProTrader"
+                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-sm text-[#F5F5F5] focus:border-[#D4A843]/50 focus:outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#A0A0B0] block mb-1">Bio</label>
+                <input
+                  type="text"
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  placeholder="8+ years trading forex..."
+                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-sm text-[#F5F5F5] focus:border-[#D4A843]/50 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#A0A0B0] block mb-1">Risk Level</label>
+                <select
+                  value={form.risk_level}
+                  onChange={(e) => setForm({ ...form, risk_level: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-sm text-[#F5F5F5] focus:border-[#D4A843]/50 focus:outline-none"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+            {error && (
+              <div className="p-3 rounded-lg bg-[#FF1744]/10 border border-[#FF1744]/20 text-sm text-[#FF1744]">{error}</div>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={creating}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+              >
+                {creating ? "Creating..." : "Create"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="px-4 py-2 rounded-lg bg-white/5 text-[#A0A0B0] text-sm hover:bg-white/10 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Card>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
