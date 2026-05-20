@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/ai-trading/generate",
-      "schedule": "0 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }

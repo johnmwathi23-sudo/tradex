@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
-import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign } from "lucide-react"
+import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign, Bot, Zap } from "lucide-react"
 
 type Stats = {
   totalUsers: number
@@ -14,15 +14,76 @@ type Stats = {
   completedWithdrawals: number
 }
 
+type Signal = {
+  id: string
+  symbol: string
+  direction: string
+  confidence: number
+  status: string
+  rationale: string
+  created_at: string
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [signals, setSignals] = useState<Signal[]>([])
+  const [generating, setGenerating] = useState(false)
+  const [executing, setExecuting] = useState<string | null>(null)
+  const [result, setResult] = useState<string>("")
 
   useEffect(() => {
     fetch("/api/admin/stats")
       .then((r) => r.json())
       .then(setStats)
       .catch(() => {})
+    fetchSignals()
   }, [])
+
+  async function fetchSignals() {
+    try {
+      const res = await fetch("/api/ai-trading/signals")
+      const data = await res.json()
+      setSignals(Array.isArray(data) ? data.slice(0, 5) : [])
+    } catch {}
+  }
+
+  async function generateSignal() {
+    setGenerating(true)
+    setResult("")
+    try {
+      const res = await fetch("/api/ai-trading/generate", { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        setResult(`Signal generated: ${data.signal.symbol} ${data.signal.direction} (${data.signal.confidence}% confidence)`)
+        fetchSignals()
+      } else {
+        setResult(data.error || "Failed to generate signal")
+      }
+    } catch (err: any) {
+      setResult(err.message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function executeSignal(signalId: string) {
+    setExecuting(signalId)
+    setResult("")
+    try {
+      const res = await fetch(`/api/ai-trading/signals/${signalId}/execute`, { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        setResult(`Trade opened! Copied to ${data.copiedTo} followers.`)
+        fetchSignals()
+      } else {
+        setResult(data.error || "Failed to execute")
+      }
+    } catch (err: any) {
+      setResult(err.message)
+    } finally {
+      setExecuting(null)
+    }
+  }
 
   const cards = [
     { icon: Users, label: "Total Users", value: stats?.totalUsers ?? 0, href: "/dashboard/admin/users", color: "#2196F3" },
@@ -36,7 +97,8 @@ export default function AdminPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Admin Panel</h1>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {cards.map((c) => {
           const Icon = c.icon
           return (
@@ -54,6 +116,82 @@ export default function AdminPage() {
           )
         })}
       </div>
+
+      <Card className="p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center">
+              <Bot size={20} className="text-[#0A0B0F]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-[#F5F5F5]">AlphaTrader AI</h2>
+              <p className="text-xs text-[#A0A0B0]">Gemini-powered market analysis • News-aware • Auto-execution</p>
+            </div>
+          </div>
+          <button
+            onClick={generateSignal}
+            disabled={generating}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+          >
+            <Zap size={16} />
+            {generating ? "Analyzing..." : "Generate Signal"}
+          </button>
+        </div>
+
+        <p className="text-xs text-[#A0A0B0] mb-3">
+          Auto-generates daily at 6:00 AM UTC via Vercel Cron. Manual generation also available.
+        </p>
+
+        {result && (
+          <div className="p-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 text-sm text-[#D4A843] mb-4">
+            {result}
+          </div>
+        )}
+
+        {signals.length > 0 && (
+          <div className="space-y-2">
+            {signals.map((s) => (
+              <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-[#0A0B0F] border border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${
+                    s.status === "executed" ? "bg-[#00C853]" :
+                    s.status === "expired" ? "bg-[#A0A0B0]" :
+                    s.status === "cancelled" ? "bg-[#FF1744]" :
+                    "bg-[#D4A843]"
+                  }`} />
+                  <div>
+                    <div className="text-sm font-semibold text-[#F5F5F5]">
+                      {s.symbol} <span className={s.direction === "buy" ? "text-[#00C853]" : "text-[#FF1744]"}>
+                        {s.direction.toUpperCase()}
+                      </span>
+                      <span className="text-[#A0A0B0] font-normal"> @ {s.confidence}%</span>
+                    </div>
+                    <div className="text-xs text-[#A0A0B0] mt-0.5 line-clamp-1">{s.rationale}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    s.status === "executed" ? "bg-[#00C853]/10 text-[#00C853]" :
+                    s.status === "pending" ? "bg-[#D4A843]/10 text-[#D4A843]" :
+                    "bg-[#A0A0B0]/10 text-[#A0A0B0]"
+                  }`}>
+                    {s.status}
+                  </span>
+                  {s.status === "pending" && (
+                    <button
+                      onClick={() => executeSignal(s.id)}
+                      disabled={executing === s.id}
+                      className="px-3 py-1.5 rounded-lg bg-[#D4A843]/10 text-[#D4A843] text-xs font-medium hover:bg-[#D4A843]/20 transition disabled:opacity-50"
+                    >
+                      {executing === s.id ? "..." : "Execute"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
