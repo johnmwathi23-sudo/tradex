@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -64,7 +64,6 @@ export default function TradingPage() {
   const [message, setMessage] = useState("")
   const [closingId, setClosingId] = useState<string | null>(null)
   const [price, setPrice] = useState<Price | null>(null)
-  const priceRef = useRef<HTMLDivElement>(null)
 
   const fetchPrice = useCallback(async () => {
     try {
@@ -82,10 +81,10 @@ export default function TradingPage() {
     } catch {}
   }, [])
 
-  const fetchAll = useCallback(() => {
-    fetchTrades()
+  const refreshAll = useCallback(() => {
     fetchPrice()
-  }, [fetchTrades, fetchPrice])
+    fetchTrades()
+  }, [fetchPrice, fetchTrades])
 
   useEffect(() => {
     fetch("/api/mt/accounts")
@@ -102,11 +101,10 @@ export default function TradingPage() {
       .then((r) => r.json())
       .then((data) => setInstruments(Array.isArray(data) ? data : []))
 
-    fetchAll()
-
-    const interval = setInterval(fetchAll, 5000)
+    refreshAll()
+    const interval = setInterval(refreshAll, 3000)
     return () => clearInterval(interval)
-  }, [fetchAll])
+  }, [refreshAll])
 
   useEffect(() => {
     setPrice(null)
@@ -128,7 +126,7 @@ export default function TradingPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid}`)
-      fetchTrades()
+      refreshAll()
       fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
@@ -143,8 +141,8 @@ export default function TradingPage() {
       const res = await fetch(`/api/mt/orders/${tradeId}/close`, { method: "POST" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Closed: ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)} (bid: ${data.bid}, ask: ${data.ask})`)
-      fetchTrades()
+      setMessage(`Closed ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)}`)
+      refreshAll()
       fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
@@ -153,8 +151,13 @@ export default function TradingPage() {
     }
   }
 
-  const activeInstrument = instruments.find((i) => i.symbol === selectedInstrument)
-  const priceColor = price && price.bid > (price.ask - price.spread) * 0.999 ? "text-[#00C853]" : "text-[#F5F5F5]"
+  const entryPositions = openTrades.map((t) => ({
+    id: t.id,
+    symbol: t.symbol,
+    type: t.type,
+    open_price: t.open_price,
+    volume: t.volume,
+  }))
 
   return (
     <div>
@@ -174,11 +177,8 @@ export default function TradingPage() {
               ))}
             </select>
           )}
-          <a
-            href="/dashboard/mt-accounts"
-            className="px-4 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10"
-          >
-            Manage Accounts
+          <a href="/dashboard/mt-accounts" className="px-4 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10">
+            Accounts
           </a>
         </div>
       </div>
@@ -186,12 +186,15 @@ export default function TradingPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 p-0 overflow-hidden">
           <div className="h-[500px] bg-[#0A0B0F] relative">
-            <TradingViewChart symbol={selectedInstrument} />
+            <TradingViewChart symbol={selectedInstrument} positions={entryPositions} />
             {price && (
-              <div ref={priceRef} className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10">
-                <div className="text-lg font-bold font-mono text-[#F5F5F5]">{price.bid.toFixed(5)}</div>
+              <div className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10 select-none">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold font-mono text-[#F5F5F5]">{price.bid.toFixed(5)}</span>
+                  <span className="text-xs text-[#A0A0B0]">/</span>
+                  <span className="text-lg font-bold font-mono text-[#F5F5F5]">{price.ask.toFixed(5)}</span>
+                </div>
                 <div className="flex gap-3 text-xs text-[#A0A0B0] mt-0.5">
-                  <span>Ask: <span className="text-[#FF1744] font-mono">{price.ask.toFixed(5)}</span></span>
                   <span>Spread: <span className="text-[#D4A843] font-mono">{price.spread.toFixed(5)}</span></span>
                   <span className={price.source === "live" ? "text-[#00C853]" : "text-[#D4A843]"}>
                     {price.source === "live" ? "LIVE" : "REF"}
@@ -209,9 +212,7 @@ export default function TradingPage() {
                   onClick={() => setActiveCategory(cat)}
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition",
-                    activeCategory === cat
-                      ? "bg-[#D4A843]/15 text-[#D4A843]"
-                      : "text-[#A0A0B0] hover:text-[#F5F5F5] hover:bg-white/5"
+                    activeCategory === cat ? "bg-[#D4A843]/15 text-[#D4A843]" : "text-[#A0A0B0] hover:text-[#F5F5F5] hover:bg-white/5"
                   )}
                 >
                   {cat}
@@ -243,19 +244,17 @@ export default function TradingPage() {
             {!selectedAccount ? (
               <div className="text-center py-8">
                 <p className="text-sm text-[#A0A0B0]">No MT4/MT5 account connected</p>
-                <a
-                  href="/dashboard/mt-accounts"
-                  className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20"
-                >
+                <a href="/dashboard/mt-accounts" className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20">
                   Connect Account
                 </a>
               </div>
             ) : (
               <div className="space-y-3">
                 {price && (
-                  <div className="flex justify-between text-xs px-1">
-                    <span className="text-[#00C853] font-mono">Bid {price.bid.toFixed(5)}</span>
-                    <span className="text-[#FF1744] font-mono">Ask {price.ask.toFixed(5)}</span>
+                  <div className="flex justify-between text-sm font-mono px-1 py-1.5 rounded-lg bg-[#0A0B0F]">
+                    <span className="text-[#00C853]">Bid {price.bid.toFixed(5)}</span>
+                    <span className="text-[#A0A0B0]">|</span>
+                    <span className="text-[#FF1744]">Ask {price.ask.toFixed(5)}</span>
                   </div>
                 )}
 
@@ -282,7 +281,7 @@ export default function TradingPage() {
                         : "bg-[#00C853]/15 text-[#00C853] hover:bg-[#00C853]/25"
                     )}
                   >
-                    Buy {price ? `@ ${price.ask.toFixed(5)}` : ""}
+                    Buy {price ? price.ask.toFixed(5) : ""}
                   </button>
                   <button
                     onClick={() => setOrderType("sell")}
@@ -293,7 +292,7 @@ export default function TradingPage() {
                         : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
                     )}
                   >
-                    Sell {price ? `@ ${price.bid.toFixed(5)}` : ""}
+                    Sell {price ? price.bid.toFixed(5) : ""}
                   </button>
                 </div>
 
@@ -327,32 +326,45 @@ export default function TradingPage() {
           <Card className="p-4">
             <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">
               Open Positions ({openTrades.length})
+              <span className="text-xs text-[#A0A0B0] font-normal ml-2">updates every 3s</span>
             </h3>
             {openTrades.length === 0 ? (
               <p className="text-xs text-[#A0A0B0] text-center py-4">No open positions</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[280px] overflow-y-auto">
                 {openTrades.map((t) => (
                   <div key={t.id} className="p-2 rounded-lg bg-[#0A0B0F]">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</span>
+                        <span className={cn(
+                          "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                          t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]"
+                        )}>
+                          {t.type.toUpperCase()}
+                        </span>
+                      </div>
                       <button
                         onClick={() => closeTrade(t.id)}
                         disabled={closingId === t.id}
                         className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
                       >
-                        {closingId === t.id ? "..." : `Close @ ${t.type === "buy" ? (t.bid || "?") : (t.ask || "?")}`}
+                        {closingId === t.id ? "..." : "Close"}
                       </button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#A0A0B0]">
-                        {t.type.toUpperCase()} · {t.volume} lots · {t.open_price}
-                      </span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                      <span className="text-[#A0A0B0]">Entry: <span className="text-[#F5F5F5]">{t.open_price}</span></span>
                       <span className={cn(
-                        "text-xs font-semibold",
+                        "text-right font-semibold",
                         t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]"
                       )}>
                         {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl.toFixed(2)}
+                      </span>
+                      <span className="text-[#A0A0B0]">
+                        Lots: <span className="text-[#F5F5F5]">{t.volume}</span>
+                      </span>
+                      <span className="text-right text-[#A0A0B0]">
+                        {t.bid && t.ask ? `Mkt: ${((t.bid + t.ask) / 2).toFixed(5)}` : ""}
                       </span>
                     </div>
                   </div>

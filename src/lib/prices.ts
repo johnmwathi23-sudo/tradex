@@ -1,5 +1,5 @@
 const cache = new Map<string, { bid: number; ask: number; time: number }>()
-const CACHE_TTL = 10000
+const CACHE_TTL = 2000
 
 const symbolSources: Record<string, { api: string; from: string; to: string }> = {
   EURUSD:  { api: "forex", from: "EUR", to: "USD" },
