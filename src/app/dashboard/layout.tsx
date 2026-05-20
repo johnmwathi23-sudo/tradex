@@ -43,13 +43,11 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => setIsAdmin(data?.role === "admin"))
-  }, [user, supabase])
+    fetch("/api/admin/check")
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(data.isAdmin))
+      .catch(() => {})
+  }, [user])
 
   async function handleLogout() {
     await supabase.auth.signOut()
