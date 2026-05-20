@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function GET() {
@@ -6,7 +7,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ isAdmin: false })
 
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
