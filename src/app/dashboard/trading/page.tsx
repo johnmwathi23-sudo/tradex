@@ -92,7 +92,7 @@ export default function TradingPage() {
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [selectedInstrument, setSelectedInstrument] = useState("XAUUSD")
   const [activeCategory, setActiveCategory] = useState("forex")
-  const [volume, setVolume] = useState("0.01")
+  const [volume, setVolume] = useState("0.5")
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
   const [tradeDuration, setTradeDuration] = useState(5)
   const [placing, setPlacing] = useState(false)
@@ -366,7 +366,7 @@ export default function TradingPage() {
                     type="number"
                     value={volume}
                     onChange={(e) => setVolume(e.target.value)}
-                    step="0.01" min="0.01" max="100"
+                    step="0.1" min="0.5" max="100"
                     className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
                   />
                 </div>
