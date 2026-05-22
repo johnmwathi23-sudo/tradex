@@ -45,6 +45,7 @@ export async function GET() {
       return {
         ...t, current_price: t.open_price, mark_price: t.open_price,
         unrealized_pnl: 0, duration: durationMin, age_minutes: Number(ageMin.toFixed(1)),
+        close_time: new Date(new Date(t.created_at).getTime() + durationMin * 60000).toISOString(),
       }
     }
 
@@ -52,6 +53,7 @@ export async function GET() {
       ...t, current_price: t.close_price || t.open_price, mark_price: t.close_price || t.open_price,
       unrealized_pnl: t.profit || 0, duration: t.duration || durationMin,
       age_minutes: Number(ageMin.toFixed(1)),
+      close_time: t.closed_at,
     }
   }))
 
