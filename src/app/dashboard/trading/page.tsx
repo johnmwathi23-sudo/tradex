@@ -78,14 +78,6 @@ type Price = {
 }
 
 const categories = ["forex", "commodities", "indices", "crypto"]
-const durationOptions = [
-  { value: 5, label: "5 min" },
-  { value: 10, label: "10 min" },
-  { value: 15, label: "15 min" },
-  { value: 30, label: "30 min" },
-  { value: 60, label: "60 min" },
-]
-
 function formatCountdown(ms: number): string {
   if (ms <= 0) return "0:00"
   const m = Math.floor(ms / 60000)
@@ -377,19 +369,6 @@ export default function TradingPage() {
                     step="0.01" min="0.01" max="100"
                     className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
                   />
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#A0A0B0] block mb-1">Duration</label>
-                  <select
-                    value={tradeDuration}
-                    onChange={(e) => setTradeDuration(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
-                  >
-                    {durationOptions.map((d) => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing || !price}>

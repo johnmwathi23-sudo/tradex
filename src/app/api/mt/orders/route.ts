@@ -113,7 +113,6 @@ export async function POST(req: Request) {
       type,
       volume: parseFloat(volume),
       open_price: entryPrice,
-      duration: tradeDuration,
       status: "open",
     })
     .select()
