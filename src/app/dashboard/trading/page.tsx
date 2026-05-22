@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, Component } from "react"
+import { useEffect, useState, useCallback, useRef, Component } from "react"
 import type { ReactNode } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -63,6 +63,9 @@ type Trade = {
   profit: number | null
   status: string
   opened_at: string
+  duration: number
+  close_time: string
+  age_minutes: number
 }
 
 type Price = {
@@ -75,6 +78,20 @@ type Price = {
 }
 
 const categories = ["forex", "commodities", "indices", "crypto"]
+const durationOptions = [
+  { value: 5, label: "5 min" },
+  { value: 10, label: "10 min" },
+  { value: 15, label: "15 min" },
+  { value: 30, label: "30 min" },
+  { value: 60, label: "60 min" },
+]
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "0:00"
+  const m = Math.floor(ms / 60000)
+  const s = Math.floor((ms % 60000) / 1000)
+  return `${m}:${s.toString().padStart(2, "0")}`
+}
 
 export default function TradingPage() {
   const [accounts, setAccounts] = useState<MtAccount[]>([])
@@ -85,10 +102,17 @@ export default function TradingPage() {
   const [activeCategory, setActiveCategory] = useState("forex")
   const [volume, setVolume] = useState("0.01")
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
+  const [tradeDuration, setTradeDuration] = useState(5)
   const [placing, setPlacing] = useState(false)
   const [message, setMessage] = useState("")
   const [closingId, setClosingId] = useState<string | null>(null)
   const [price, setPrice] = useState<Price | null>(null)
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const fetchPrice = useCallback(async () => {
     try {
@@ -146,6 +170,14 @@ export default function TradingPage() {
     fetchPrice()
   }, [selectedInstrument, fetchPrice])
 
+  useEffect(() => {
+    openTrades.forEach((t) => {
+      if (t.close_time && new Date(t.close_time).getTime() <= Date.now()) {
+        closeTrade(t.id)
+      }
+    })
+  }, [now])
+
   const filteredInstruments = instruments.filter((i) => i.category === activeCategory)
 
   async function placeOrder() {
@@ -156,11 +188,17 @@ export default function TradingPage() {
       const res = await fetch("/api/mt/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mt_account_id: selectedAccount, symbol: selectedInstrument, type: orderType, volume }),
+        body: JSON.stringify({
+          mt_account_id: selectedAccount,
+          symbol: selectedInstrument,
+          type: orderType,
+          volume,
+          duration: tradeDuration,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid}`)
+      setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid} (${tradeDuration}min)`)
       refreshAll()
       fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : [])).catch(() => {})
     } catch (err: any) {
@@ -232,9 +270,7 @@ export default function TradingPage() {
                 </div>
                 <div className="flex gap-3 text-xs text-[#A0A0B0] mt-0.5">
                   <span>Spread: <span className="text-[#D4A843] font-mono">{price.spread.toFixed(5)}</span></span>
-                  <span className={price.source === "live" ? "text-[#00C853]" : "text-[#D4A843]"}>
-                    {price.source === "live" ? "LIVE" : "REF"}
-                  </span>
+                  <span className="text-[#00C853]">SIMULATED</span>
                 </div>
               </div>
             )}
@@ -343,6 +379,19 @@ export default function TradingPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">Duration</label>
+                  <select
+                    value={tradeDuration}
+                    onChange={(e) => setTradeDuration(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
+                  >
+                    {durationOptions.map((d) => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing || !price}>
                   {placing ? "Executing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
                 </Button>
@@ -367,44 +416,56 @@ export default function TradingPage() {
             {openTrades.length === 0 ? (
               <p className="text-xs text-[#A0A0B0] text-center py-4">No open positions</p>
             ) : (
-              <div className="space-y-2 max-h-[280px] overflow-y-auto">
-                {openTrades.map((t) => (
-                  <div key={t.id} className="p-2 rounded-lg bg-[#0A0B0F]">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</span>
+              <div className="space-y-2 max-h-[360px] overflow-y-auto">
+                {openTrades.map((t) => {
+                  const remaining = t.close_time ? new Date(t.close_time).getTime() - now : 0
+                  return (
+                    <div key={t.id} className="p-2 rounded-lg bg-[#0A0B0F]">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</span>
+                          <span className={cn(
+                            "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                            t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]"
+                          )}>
+                            {t.type.toUpperCase()}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => closeTrade(t.id)}
+                          disabled={closingId === t.id}
+                          className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
+                        >
+                          {closingId === t.id ? "..." : "Close"}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                        <span className="text-[#A0A0B0]">Entry: <span className="text-[#F5F5F5]">{t.open_price}</span></span>
                         <span className={cn(
-                          "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                          t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]"
+                          "text-right font-semibold",
+                          t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]"
                         )}>
-                          {t.type.toUpperCase()}
+                          {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl.toFixed(2)}
+                        </span>
+                        <span className="text-[#A0A0B0]">
+                          Lots: <span className="text-[#F5F5F5]">{t.volume}</span>
+                        </span>
+                        <span className={cn(
+                          "text-right font-mono",
+                          remaining > 120000 ? "text-[#A0A0B0]" : remaining > 60000 ? "text-[#D4A843]" : "text-[#FF1744]"
+                        )}>
+                          {formatCountdown(remaining)}
+                        </span>
+                        <span className="text-[#A0A0B0] text-[10px]">
+                          Age: {t.age_minutes}m / {t.duration}m
+                        </span>
+                        <span className="text-right text-[#A0A0B0]">
+                          {t.bid && t.ask ? `Mkt: ${((t.bid + t.ask) / 2).toFixed(5)}` : ""}
                         </span>
                       </div>
-                      <button
-                        onClick={() => closeTrade(t.id)}
-                        disabled={closingId === t.id}
-                        className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
-                      >
-                        {closingId === t.id ? "..." : "Close"}
-                      </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                      <span className="text-[#A0A0B0]">Entry: <span className="text-[#F5F5F5]">{t.open_price}</span></span>
-                      <span className={cn(
-                        "text-right font-semibold",
-                        t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]"
-                      )}>
-                        {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl.toFixed(2)}
-                      </span>
-                      <span className="text-[#A0A0B0]">
-                        Lots: <span className="text-[#F5F5F5]">{t.volume}</span>
-                      </span>
-                      <span className="text-right text-[#A0A0B0]">
-                        {t.bid && t.ask ? `Mkt: ${((t.bid + t.ask) / 2).toFixed(5)}` : ""}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Card>

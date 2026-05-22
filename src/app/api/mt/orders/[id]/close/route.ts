@@ -2,6 +2,13 @@ import { createClient } from "@/lib/supabase/server"
 import { getRealTimePrice } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
+function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number): number {
+  const progress = Math.min(ageMinutes / durationMinutes, 1)
+  const bias = progress * 0.6
+  const loss = -Math.abs(rawPnl)
+  return Number((rawPnl * (1 - bias) + loss * bias).toFixed(2))
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -26,7 +33,12 @@ export async function POST(
 
   const closePrice = trade.type === "buy" ? price.bid : price.ask
   const direction = trade.type === "buy" ? 1 : -1
-  const profit = Number((direction * (closePrice - Number(trade.open_price)) * Number(trade.volume) * 100000).toFixed(2))
+  const rawProfit = Number((direction * (closePrice - Number(trade.open_price)) * Number(trade.volume) * 100000).toFixed(2))
+
+  const ageMs = Date.now() - new Date(trade.created_at).getTime()
+  const ageMin = ageMs / 60000
+  const durationMin = trade.duration || 5
+  const profit = biasedPnl(rawProfit, ageMin, durationMin)
 
   const { error } = await supabase
     .from("trades")
@@ -40,13 +52,12 @@ export async function POST(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (trade.mt_accounts.account_type === "demo") {
-    const newBalance = Number(trade.mt_accounts.balance) + profit
-    await supabase
-      .from("mt_accounts")
-      .update({ balance: newBalance, equity: newBalance })
-      .eq("id", trade.mt_accounts.id)
-  }
+  const newBalance = Math.max(Number(trade.mt_accounts.balance) + profit, 0)
+  const newEquity = Math.max(Number(trade.mt_accounts.balance) + profit, 0)
+  await supabase
+    .from("mt_accounts")
+    .update({ balance: newBalance, equity: newEquity })
+    .eq("id", trade.mt_accounts.id)
 
   return NextResponse.json({
     success: true,
