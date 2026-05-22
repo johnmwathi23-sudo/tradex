@@ -427,10 +427,15 @@ export default function TradingPage() {
                         </div>
                         <button
                           onClick={() => closeTrade(t.id)}
-                          disabled={closingId === t.id}
-                          className="px-3 py-1 rounded-lg bg-[#FF1744]/15 text-[#FF1744] text-xs font-medium hover:bg-[#FF1744]/25 transition disabled:opacity-50"
+                          disabled={closingId === t.id || remaining > 0}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-xs font-medium transition disabled:opacity-50",
+                            remaining > 0
+                              ? "bg-[#A0A0B0]/10 text-[#A0A0B0] cursor-not-allowed"
+                              : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
+                          )}
                         >
-                          {closingId === t.id ? "..." : "Close"}
+                          {closingId === t.id ? "..." : remaining > 0 ? formatCountdown(remaining) : "Close"}
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">

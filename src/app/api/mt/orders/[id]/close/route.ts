@@ -38,6 +38,9 @@ export async function POST(
   const ageMs = Date.now() - new Date(trade.created_at).getTime()
   const ageMin = ageMs / 60000
   const durationMin = Number(trade.take_profit) || 5
+  if (ageMin < durationMin) {
+    return NextResponse.json({ error: `Trade cannot be closed until ${Math.ceil(durationMin - ageMin)} more minutes` }, { status: 400 })
+  }
   const profit = biasedPnl(rawProfit, ageMin, durationMin)
 
   const { error } = await supabase
