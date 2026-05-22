@@ -60,9 +60,19 @@ export default function TradingViewChart({
     })
   }
 
+  function destroyWidget() {
+    linesRef.current = []
+    if (widgetRef.current) {
+      try { widgetRef.current.remove() } catch {}
+      widgetRef.current = null
+    }
+  }
+
   useEffect(() => {
     const tvSymbol = symbolMap[symbol] || `FX:${symbol}`
     const containerId = `tv_chart_${symbol.replace(/[^a-zA-Z0-9]/g, "_")}`
+
+    destroyWidget()
 
     if (containerRef.current) {
       containerRef.current.innerHTML = `<div id="${containerId}" style="width:100%;height:100%"></div>`
@@ -123,11 +133,13 @@ export default function TradingViewChart({
       script.src = "https://s3.tradingview.com/tv.js"
       script.async = true
       script.onload = initWidget
+      script.onerror = () => {}
       document.body.appendChild(script)
     }
 
     return () => {
       mounted = false
+      destroyWidget()
     }
   }, [symbol])
 

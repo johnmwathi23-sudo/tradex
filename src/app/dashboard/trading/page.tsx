@@ -1,10 +1,34 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, Component } from "react"
+import type { ReactNode } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import TradingViewChart from "@/components/trading-view-chart"
+import SimulatedChart from "@/components/simulated-chart"
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-[#A0A0B0] mb-4">Something went wrong loading the terminal</p>
+          <Button variant="primary" onClick={() => this.setState({ error: null })}>
+            Retry
+          </Button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 type MtAccount = {
   id: string
@@ -46,6 +70,7 @@ type Price = {
   bid: number
   ask: number
   spread: number
+  mid: number
   source: string
 }
 
@@ -87,23 +112,33 @@ export default function TradingPage() {
   }, [fetchPrice, fetchTrades])
 
   useEffect(() => {
+    let cancelled = false
+
     fetch("/api/mt/accounts")
       .then((r) => r.json())
       .then((data) => {
+        if (cancelled) return
         const list = Array.isArray(data) ? data : []
         setAccounts(list)
         const def = list.find((a: MtAccount) => a.is_default)
         if (def) setSelectedAccount(def.id)
         else if (list.length > 0) setSelectedAccount(list[0].id)
       })
+      .catch(() => {})
 
     fetch("/api/mt/instruments")
       .then((r) => r.json())
-      .then((data) => setInstruments(Array.isArray(data) ? data : []))
+      .then((data) => {
+        if (!cancelled) setInstruments(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {})
 
     refreshAll()
     const interval = setInterval(refreshAll, 3000)
-    return () => clearInterval(interval)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [refreshAll])
 
   useEffect(() => {
@@ -127,7 +162,7 @@ export default function TradingPage() {
       if (!res.ok) throw new Error(data.error)
       setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid}`)
       refreshAll()
-      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
+      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : [])).catch(() => {})
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
     } finally {
@@ -143,7 +178,7 @@ export default function TradingPage() {
       if (!res.ok) throw new Error(data.error)
       setMessage(`Closed ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)}`)
       refreshAll()
-      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : []))
+      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : [])).catch(() => {})
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
     } finally {
@@ -160,6 +195,7 @@ export default function TradingPage() {
   }))
 
   return (
+    <ErrorBoundary>
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-[#F5F5F5]">Trading Terminal</h1>
@@ -186,7 +222,7 @@ export default function TradingPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 p-0 overflow-hidden">
           <div className="h-[500px] bg-[#0A0B0F] relative">
-            <TradingViewChart symbol={selectedInstrument} positions={entryPositions} />
+            <SimulatedChart symbol={selectedInstrument} currentPrice={price?.mid ?? null} positions={entryPositions} />
             {price && (
               <div className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10 select-none">
                 <div className="flex items-baseline gap-2">
@@ -375,5 +411,6 @@ export default function TradingPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }

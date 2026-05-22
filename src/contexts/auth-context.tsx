@@ -15,24 +15,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
+    let subscription: { unsubscribe: () => void } | null = null
+
     const init = async () => {
       try {
         const { createClient } = await import("@/lib/supabase/client")
         const supabase = createClient()
 
         const { data } = await supabase.auth.getUser()
-        setUser(data.user)
+        if (!cancelled) setUser(data.user)
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          setUser(session?.user ?? null)
+        const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!cancelled) setUser(session?.user ?? null)
         })
-
-        return () => subscription.unsubscribe()
+        subscription = sub
       } catch {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
-    init().finally(() => setLoading(false))
+
+    init().finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+      subscription?.unsubscribe()
+    }
   }, [])
 
   return (
