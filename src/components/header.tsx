@@ -29,16 +29,20 @@ export function Header() {
   useEffect(() => {
     if (!user) { setBalance(null); return }
     let cancelled = false
-    fetch("/api/mt/accounts")
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return
-        const list = Array.isArray(data) ? data : []
-        const acct = list.find((a: any) => a.is_default) || list[0]
-        if (acct) setBalance(Number(acct.balance))
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
+    function fetchBalance() {
+      fetch("/api/mt/accounts")
+        .then((r) => r.json())
+        .then((data) => {
+          if (cancelled) return
+          const list = Array.isArray(data) ? data : []
+          const acct = list.find((a: any) => a.is_default) || list[0]
+          setBalance(acct ? Number(acct.balance) : 0)
+        })
+        .catch(() => {})
+    }
+    fetchBalance()
+    const interval = setInterval(fetchBalance, 10000)
+    return () => { cancelled = true; clearInterval(interval) }
   }, [user])
 
   async function handleLogout() {
