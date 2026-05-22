@@ -37,7 +37,7 @@ export async function POST(
 
   const ageMs = Date.now() - new Date(trade.created_at).getTime()
   const ageMin = ageMs / 60000
-  const durationMin = trade.duration || 5
+  const durationMin = Number(trade.take_profit) || 5
   const profit = biasedPnl(rawProfit, ageMin, durationMin)
 
   const { error } = await supabase

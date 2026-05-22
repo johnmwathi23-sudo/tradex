@@ -371,6 +371,21 @@ export default function TradingPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">Duration</label>
+                  <select
+                    value={tradeDuration}
+                    onChange={(e) => setTradeDuration(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
+                  >
+                    <option value={5}>5 min</option>
+                    <option value={10}>10 min</option>
+                    <option value={15}>15 min</option>
+                    <option value={30}>30 min</option>
+                    <option value={60}>60 min</option>
+                  </select>
+                </div>
+
                 <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing || !price}>
                   {placing ? "Executing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
                 </Button>

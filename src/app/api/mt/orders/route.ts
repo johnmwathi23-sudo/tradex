@@ -24,7 +24,7 @@ export async function GET() {
   const totalEquity = { change: 0 }
 
   const enriched = await Promise.all((data ?? []).map(async (t: any) => {
-    const durationMin = t.duration || 5
+    const durationMin = Number(t.take_profit) || 5
     const ageMs = Date.now() - new Date(t.created_at).getTime()
     const ageMin = ageMs / 60000
 
@@ -51,7 +51,7 @@ export async function GET() {
 
     return {
       ...t, current_price: t.close_price || t.open_price, mark_price: t.close_price || t.open_price,
-      unrealized_pnl: t.profit || 0, duration: t.duration || durationMin,
+      unrealized_pnl: t.profit || 0, duration: Number(t.take_profit) || durationMin,
       age_minutes: Number(ageMin.toFixed(1)),
       close_time: t.closed_at,
     }
@@ -113,6 +113,7 @@ export async function POST(req: Request) {
       type,
       volume: parseFloat(volume),
       open_price: entryPrice,
+      take_profit: tradeDuration,
       status: "open",
     })
     .select()
