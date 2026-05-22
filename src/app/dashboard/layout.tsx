@@ -23,6 +23,14 @@ const sidebarLinks = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
+const mobileNavLinks = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/trading", label: "Trading", icon: TrendingUp },
+  { href: "/dashboard/mt-accounts", label: "Accounts", icon: Terminal },
+  { href: "/dashboard/deposit", label: "Deposit", icon: ArrowDownLeft },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+]
+
 const adminLinks = [
   { href: "/dashboard/admin", label: "Admin Panel", icon: Shield },
   { href: "/dashboard/admin/users", label: "Users", icon: Shield },
@@ -71,7 +79,7 @@ export default function DashboardLayout({
   const isAdminRoute = pathname.startsWith("/dashboard/admin")
 
   return (
-    <div className="pt-16 min-h-screen flex">
+    <div className="pt-16 min-h-screen flex overflow-x-hidden">
       <aside className="hidden lg:flex w-64 flex-col bg-[#1A1D29]/50 border-r border-white/5 p-4 fixed top-16 bottom-0">
         <div className="text-sm text-[#A0A0B0] px-4 pb-4 mb-4 border-b border-white/5">
           {user.email}
@@ -134,7 +142,7 @@ export default function DashboardLayout({
         </button>
       </aside>
 
-      <main className="flex-1 lg:ml-64 p-6">
+      <main className="flex-1 lg:ml-64 p-4 sm:p-6 pb-20 lg:pb-6 min-w-0">
         {isAdminRoute && !isAdmin && (
           <div className="text-center py-12">
             <p className="text-sm text-[#FF1744]">Access denied. Admin privileges required.</p>
@@ -142,6 +150,29 @@ export default function DashboardLayout({
         )}
         {(!isAdminRoute || isAdmin) && children}
       </main>
+
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#1A1D29]/95 backdrop-blur-xl border-t border-white/5">
+        <div className="flex items-center justify-around px-2 py-1">
+          {mobileNavLinks.map((link) => {
+            const isActive = pathname === link.href
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[10px] font-medium transition-all min-w-0",
+                  isActive
+                    ? "text-[#D4A843]"
+                    : "text-[#A0A0B0] hover:text-[#F5F5F5]"
+                )}
+              >
+                <link.icon size={20} />
+                <span className="truncate max-w-full">{link.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }

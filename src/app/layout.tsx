@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import { Header } from "@/components/header"
@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   keywords: "forex trading, copy trading, CFD trading, online trading, TradeX",
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="min-h-screen bg-[#0A0B0F] text-[#F5F5F5] font-sans antialiased flex flex-col">
+      <body className="min-h-screen bg-[#0A0B0F] text-[#F5F5F5] font-sans antialiased flex flex-col overflow-x-hidden">
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>

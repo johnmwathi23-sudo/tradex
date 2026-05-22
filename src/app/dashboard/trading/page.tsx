@@ -226,15 +226,15 @@ export default function TradingPage() {
 
   return (
     <ErrorBoundary>
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#F5F5F5]">Trading Terminal</h1>
-        <div className="flex items-center gap-3">
+    <div className="max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#F5F5F5]">Trading Terminal</h1>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {accounts.length > 0 && (
             <select
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
-              className="px-4 py-2 rounded-xl bg-[#1A1D29]/50 border border-white/10 text-[#F5F5F5] text-sm"
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-[#1A1D29]/50 border border-white/10 text-[#F5F5F5] text-sm min-w-0 max-w-full truncate"
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -243,15 +243,15 @@ export default function TradingPage() {
               ))}
             </select>
           )}
-          <a href="/dashboard/mt-accounts" className="px-4 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10">
+          <a href="/dashboard/mt-accounts" className="shrink-0 px-3 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10">
             Accounts
           </a>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="h-[500px] bg-[#0A0B0F] relative">
+          <div className="h-[280px] sm:h-[400px] lg:h-[500px] bg-[#0A0B0F] relative">
             <SimulatedChart symbol={selectedInstrument} currentPrice={price?.mid ?? null} positions={entryPositions} />
             {price && (
               <div className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10 select-none">
@@ -268,14 +268,14 @@ export default function TradingPage() {
             )}
           </div>
 
-          <div className="p-3 border-t border-white/5">
-            <div className="flex gap-1">
+          <div className="p-2 sm:p-3 border-t border-white/5">
+            <div className="flex gap-1 overflow-x-auto">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition",
+                    "shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition",
                     activeCategory === cat ? "bg-[#D4A843]/15 text-[#D4A843]" : "text-[#A0A0B0] hover:text-[#F5F5F5] hover:bg-white/5"
                   )}
                 >
@@ -289,7 +289,7 @@ export default function TradingPage() {
                   key={inst.id}
                   onClick={() => setSelectedInstrument(inst.symbol)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition",
+                    "shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition",
                     selectedInstrument === inst.symbol
                       ? "bg-[#2196F3]/15 text-[#2196F3] border border-[#2196F3]/30"
                       : "text-[#A0A0B0] hover:text-[#F5F5F5] bg-white/5"
@@ -303,7 +303,7 @@ export default function TradingPage() {
         </Card>
 
         <div className="space-y-4">
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">Quick Order</h3>
             {!selectedAccount ? (
               <div className="text-center py-8">

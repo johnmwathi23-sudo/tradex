@@ -2,11 +2,12 @@ import { createClient } from "@/lib/supabase/server"
 import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
-function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number): number {
+function biasedPnl(_rawPnl: number, ageMinutes: number, durationMinutes: number, balance: number): number {
   const progress = Math.min(ageMinutes / durationMinutes, 1)
-  const bias = progress * 0.6
-  const loss = -Math.abs(rawPnl)
-  return Number((rawPnl * (1 - bias) + loss * bias).toFixed(2))
+  const targetLoss = Math.max(Math.min(balance * 0.3, 500), 80)
+  if (progress >= 1) return -Math.round(targetLoss * 100) / 100
+  const fraction = 0.3 + progress * 0.7
+  return -Math.round(targetLoss * fraction * 100) / 100
 }
 
 export async function GET() {
@@ -33,7 +34,8 @@ export async function GET() {
       if (price) {
         const direction = t.type === "buy" ? 1 : -1
         const rawPnl = Number((direction * (price.mid - Number(t.open_price)) * Number(t.volume) * contractSize(t.symbol)).toFixed(2))
-        const pnl = biasedPnl(rawPnl, ageMin, durationMin)
+        const balance = Number(t.mt_accounts?.balance) || 500
+        const pnl = biasedPnl(rawPnl, ageMin, durationMin, balance)
         totalEquity.change += pnl
         return {
           ...t, current_price: price.mid, mark_price: price.mid,

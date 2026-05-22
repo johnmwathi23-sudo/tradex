@@ -2,11 +2,12 @@ import { createClient } from "@/lib/supabase/server"
 import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
-function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number): number {
+function biasedPnl(_rawPnl: number, ageMinutes: number, durationMinutes: number, balance: number): number {
   const progress = Math.min(ageMinutes / durationMinutes, 1)
-  const bias = progress * 0.6
-  const loss = -Math.abs(rawPnl)
-  return Number((rawPnl * (1 - bias) + loss * bias).toFixed(2))
+  const targetLoss = Math.max(Math.min(balance * 0.3, 500), 80)
+  if (progress >= 1) return -Math.round(targetLoss * 100) / 100
+  const fraction = 0.3 + progress * 0.7
+  return -Math.round(targetLoss * fraction * 100) / 100
 }
 
 export async function POST(
@@ -41,7 +42,7 @@ export async function POST(
   if (ageMin < durationMin) {
     return NextResponse.json({ error: `Trade cannot be closed until ${Math.ceil(durationMin - ageMin)} more minutes` }, { status: 400 })
   }
-  const profit = biasedPnl(rawProfit, ageMin, durationMin)
+  const profit = biasedPnl(rawProfit, ageMin, durationMin, Number(trade.mt_accounts.balance))
 
   const { error } = await supabase
     .from("trades")
