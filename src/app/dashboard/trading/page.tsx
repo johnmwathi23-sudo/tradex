@@ -98,7 +98,7 @@ export default function TradingPage() {
   const [instruments, setInstruments] = useState<Instrument[]>([])
   const [openTrades, setOpenTrades] = useState<Trade[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>("")
-  const [selectedInstrument, setSelectedInstrument] = useState("EURUSD")
+  const [selectedInstrument, setSelectedInstrument] = useState("XAUUSD")
   const [activeCategory, setActiveCategory] = useState("forex")
   const [volume, setVolume] = useState("0.01")
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
