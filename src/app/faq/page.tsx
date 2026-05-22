@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: "What trading platforms do you support?",
-    a: "We support MetaTrader 4 (MT4) and MetaTrader 5 (MT5) across desktop, web, and mobile. Our proprietary TradeX WebTrader is also available directly from your browser with advanced charting tools.",
+    a: "TradeX is available on web, mobile, and desktop. Our proprietary WebTrader is accessible directly from your browser with advanced charting tools, one-click trading, and real-time market data.",
   },
   {
     q: "How long do withdrawals take?",

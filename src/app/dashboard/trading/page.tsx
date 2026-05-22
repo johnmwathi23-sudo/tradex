@@ -307,7 +307,7 @@ export default function TradingPage() {
             <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">Quick Order</h3>
             {!selectedAccount ? (
               <div className="text-center py-8">
-                <p className="text-sm text-[#A0A0B0]">No MT4/MT5 account connected</p>
+                <p className="text-sm text-[#A0A0B0]">No trading account connected</p>
                 <a href="/dashboard/mt-accounts" className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20">
                   Connect Account
                 </a>

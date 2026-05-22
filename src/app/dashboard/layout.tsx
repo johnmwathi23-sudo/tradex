@@ -14,7 +14,7 @@ import { useEffect, useState } from "react"
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/trading", label: "Trading", icon: TrendingUp },
-  { href: "/dashboard/mt-accounts", label: "MT4/MT5", icon: Terminal },
+  { href: "/dashboard/mt-accounts", label: "Accounts", icon: Terminal },
   { href: "/dashboard/copy-trading", label: "Copy Trading", icon: Copy },
   { href: "/dashboard/deposit", label: "Deposit", icon: ArrowDownLeft },
   { href: "/dashboard/withdrawal", label: "Withdraw", icon: Wallet },

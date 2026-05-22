@@ -108,8 +108,8 @@ export default function MtAccountsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#F5F5F5]">MT4/MT5 Accounts</h1>
-          <p className="text-sm text-[#A0A0B0] mt-1">Manage your MetaTrader trading accounts</p>
+          <h1 className="text-2xl font-bold text-[#F5F5F5]">Trading Accounts</h1>
+          <p className="text-sm text-[#A0A0B0] mt-1">Manage your trading accounts</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -135,14 +135,14 @@ export default function MtAccountsPage() {
               <p className="text-sm text-[#A0A0B0]">Get a $500 virtual trading account</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Platform</label>
+                  <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Account Type</label>
                   <select
                     value={demoForm.platform}
                     onChange={(e) => setDemoForm({ ...demoForm, platform: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
                   >
-                    <option value="mt4">MT4</option>
-                    <option value="mt5">MT5</option>
+                    <option value="mt4">Standard</option>
+                    <option value="mt5">ECN</option>
                   </select>
                 </div>
                 <div>
@@ -169,7 +169,7 @@ export default function MtAccountsPage() {
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-[#00C853]/10 border border-[#00C853]/20 text-center">
                 <div className="text-lg font-bold text-[#00C853]">Demo Account Created!</div>
-                <p className="text-sm text-[#A0A0B0] mt-1">Use these credentials to log in to MT4/MT5</p>
+                <p className="text-sm text-[#A0A0B0] mt-1">Use these credentials to log in</p>
               </div>
               <div className="space-y-2 p-4 rounded-xl bg-[#0A0B0F] border border-white/10">
                 <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">Server</span><span className="text-[#F5F5F5]">{demoResult.server}</span></div>
@@ -196,7 +196,7 @@ export default function MtAccountsPage() {
           {showLink && (
             <form onSubmit={handleLink} className="space-y-4">
               <h3 className="text-lg font-semibold text-[#F5F5F5]">Link Real Account</h3>
-              <p className="text-sm text-[#A0A0B0]">Connect your existing MT4/MT5 trading account</p>
+              <p className="text-sm text-[#A0A0B0]">Connect your existing trading account</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Login ID</label>
@@ -208,14 +208,14 @@ export default function MtAccountsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Platform</label>
+                  <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Account Type</label>
                   <select
                     value={linkForm.platform}
                     onChange={(e) => setLinkForm({ ...linkForm, platform: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
                   >
-                    <option value="mt4">MT4</option>
-                    <option value="mt5">MT5</option>
+                    <option value="mt4">Standard</option>
+                    <option value="mt5">ECN</option>
                   </select>
                 </div>
                 <div>
@@ -274,7 +274,7 @@ export default function MtAccountsPage() {
         <div className="text-center py-16">
           <Terminal size={48} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
           <p className="text-sm text-[#A0A0B0]">No trading accounts linked</p>
-          <p className="text-xs text-[#A0A0B0] mt-1">Create a demo account or link your existing MT4/MT5 account</p>
+          <p className="text-xs text-[#A0A0B0] mt-1">Create a demo account or link an existing account</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -282,10 +282,8 @@ export default function MtAccountsPage() {
             <Card key={acc.id} className={`p-5 ${acc.is_default ? "border-[#D4A843]/40" : ""}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                    acc.platform === "mt4" ? "bg-[#2196F3]/15 text-[#2196F3]" : "bg-[#D4A843]/15 text-[#D4A843]"
-                  }`}>
-                    {acc.platform.toUpperCase()}
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-[#D4A843]/15 text-[#D4A843]">
+                    {acc.platform === "mt4" ? "SD" : "EC"}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -300,6 +298,9 @@ export default function MtAccountsPage() {
                         acc.status === "connected" ? "bg-[#00C853]/10 text-[#00C853]" : "bg-[#A0A0B0]/10 text-[#A0A0B0]"
                       }`}>
                         {acc.status}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#2196F3]/10 text-[#2196F3]">
+                        {acc.platform === "mt4" ? "Standard" : "ECN"}
                       </span>
                     </div>
                     <div className="text-xs text-[#A0A0B0] mt-1">{acc.server}{acc.broker ? ` · ${acc.broker}` : ""}</div>
