@@ -73,10 +73,18 @@ export default function SimulatedChart({
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const tickCountRef = useRef(0)
   const currentCandleRef = useRef<CandlestickData | null>(null)
+  const initedRef = useRef(false)
 
-  useEffect(() => {
+  function initChart(sym: string, price: number) {
     const container = containerRef.current
     if (!container) return
+
+    if (chartRef.current) {
+      if (tickRef.current) clearInterval(tickRef.current)
+      chartRef.current.remove()
+      chartRef.current = null
+      seriesRef.current = null
+    }
 
     const chart = createChart(container, {
       layout: {
@@ -117,15 +125,15 @@ export default function SimulatedChart({
       wickUpColor: "#00C853",
       priceFormat: {
         type: "price",
-        precision: digits[symbol] || 5,
-        minMove: 1 / Math.pow(10, digits[symbol] || 5),
+        precision: digits[sym] || 5,
+        minMove: 1 / Math.pow(10, digits[sym] || 5),
       },
     })
 
     seriesRef.current = series
 
     const interval = 60
-    const candles = generateCandles(symbol, 240, interval, currentPrice)
+    const candles = generateCandles(sym, 240, interval, price)
     dataRef.current = candles
     series.setData(candles)
 
@@ -135,44 +143,24 @@ export default function SimulatedChart({
       const rect = container.getBoundingClientRect()
       chart.applyOptions({ width: rect.width, height: rect.height })
     }
-
     window.addEventListener("resize", handleResize)
 
-    return () => {
-      window.removeEventListener("resize", handleResize)
-      if (tickRef.current) clearInterval(tickRef.current)
-      chart.remove()
-      chartRef.current = null
-      seriesRef.current = null
-    }
-  }, [symbol])
-
-  useEffect(() => {
-    const series = seriesRef.current
-    if (!series) return
-
+    const last = candles[candles.length - 1]
+    currentCandleRef.current = { ...last }
     tickCountRef.current = 0
 
     if (tickRef.current) clearInterval(tickRef.current)
-
-    const data = dataRef.current
-    if (data.length === 0) return
-
-    const last = data[data.length - 1]
-    currentCandleRef.current = { ...last }
-
     tickRef.current = setInterval(() => {
       const s = seriesRef.current
       if (!s) return
 
-      const base = baselines[symbol] || 1.0
+      const base = baselines[sym] || 1.0
       const vol = base * 0.0002
       const tick = (Math.random() - 0.5) * vol
       const candle = currentCandleRef.current
       if (!candle) return
 
       tickCountRef.current++
-
       const newClose = Number((candle.close + tick).toFixed(5))
 
       if (tickCountRef.current >= 10) {
@@ -200,13 +188,27 @@ export default function SimulatedChart({
       }
     }, 2000)
 
+    initedRef.current = true
+
     return () => {
-      if (tickRef.current) clearInterval(tickRef.current)
+      window.removeEventListener("resize", handleResize)
     }
+  }
+
+  useEffect(() => {
+    if (currentPrice == null) return
+    initChart(symbol, currentPrice)
   }, [symbol])
 
   useEffect(() => {
-    if (!seriesRef.current || !currentCandleRef.current || currentPrice == null) return
+    if (currentPrice == null || initedRef.current) return
+    initChart(symbol, currentPrice)
+  }, [currentPrice])
+
+  useEffect(() => {
+    if (currentPrice == null) return
+    if (!initedRef.current) return
+    if (!seriesRef.current || !currentCandleRef.current) return
     const s = seriesRef.current
     const old = currentCandleRef.current
     const updated: CandlestickData = {
