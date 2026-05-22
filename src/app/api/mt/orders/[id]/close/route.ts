@@ -2,12 +2,13 @@ import { createClient } from "@/lib/supabase/server"
 import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
-function biasedPnl(_rawPnl: number, ageMinutes: number, durationMinutes: number, balance: number): number {
+function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number, balance: number): number {
   const progress = Math.min(ageMinutes / durationMinutes, 1)
   const targetLoss = Math.max(Math.min(balance * 0.3, 500), 80)
   if (progress >= 1) return -Math.round(targetLoss * 100) / 100
-  const fraction = 0.3 + progress * 0.7
-  return -Math.round(targetLoss * fraction * 100) / 100
+  const biasWeight = Math.pow(progress, 0.5) * 0.7
+  const blended = rawPnl * (1 - biasWeight) - targetLoss * biasWeight
+  return Math.round(blended * 100) / 100
 }
 
 export async function POST(
