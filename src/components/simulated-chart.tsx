@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useEffect, useMemo } from "react"
+import { useEffect, useRef } from "react"
+import { createChart, ColorType, CandlestickSeries, type IChartApi, type ISeriesApi, type CandlestickData, type LineStyle } from "lightweight-charts"
 
 const baselines: Record<string, number> = {
   EURUSD: 1.0830, GBPUSD: 1.2650, USDJPY: 153.50, USDCHF: 0.8950,
@@ -11,14 +12,11 @@ const baselines: Record<string, number> = {
   SP500: 5350, NAS100: 18700, UK100: 8250,
 }
 
-function generateHistory(symbol: string, count: number): number[] {
-  const base = baselines[symbol] || 1.0
-  const points: number[] = [base]
-  for (let i = 1; i < count; i++) {
-    const change = (Math.random() - 0.5) * base * 0.002
-    points.push(Number((points[i - 1] + change).toFixed(5)))
-  }
-  return points
+const digits: Record<string, number> = {
+  USDJPY: 3, EURJPY: 3, GBPJPY: 3,
+  XAUUSD: 2, XAGUSD: 3, USOIL: 2,
+  BTCUSD: 1, ETHUSD: 1,
+  SP500: 2, NAS100: 2, UK100: 2,
 }
 
 type Position = {
@@ -29,108 +27,198 @@ type Position = {
   volume: number
 }
 
+function generateCandles(symbol: string, count: number, interval: number): CandlestickData[] {
+  const base = baselines[symbol] || 1.0
+  const now = Math.floor(Date.now() / 1000)
+  const result: CandlestickData[] = []
+  let price = base
+
+  for (let i = count - 1; i >= 0; i--) {
+    const time = now - i * interval
+    const vol = base * 0.0005
+    const open = price
+    const close = Number((open + (Math.random() - 0.5) * vol).toFixed(5))
+    const high = Number((Math.max(open, close) + Math.random() * vol * 0.3).toFixed(5))
+    const low = Number((Math.min(open, close) - Math.random() * vol * 0.3).toFixed(5))
+    price = close
+    result.push({ time, open, high, low, close } as CandlestickData)
+  }
+
+  return result
+}
+
 export default function SimulatedChart({
   symbol,
-  currentPrice,
+  currentPrice: _currentPrice,
   positions = [],
 }: {
   symbol: string
   currentPrice?: number | null
   positions?: Position[]
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  const history = useMemo(() => generateHistory(symbol, 200), [symbol])
+  const containerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<IChartApi | null>(null)
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null)
+  const dataRef = useRef<CandlestickData[]>([])
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const tickCountRef = useRef(0)
+  const currentCandleRef = useRef<CandlestickData | null>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const container = containerRef.current
+    if (!container) return
 
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    ctx.scale(dpr, dpr)
+    const chart = createChart(container, {
+      layout: {
+        background: { type: ColorType.Solid, color: "#0A0B0F" },
+        textColor: "#A0A0B0",
+      },
+      grid: {
+        vertLines: { color: "#1A1D29" },
+        horzLines: { color: "#1A1D29" },
+      },
+      crosshair: {
+        vertLine: { color: "#D4A843", style: 2 as LineStyle, width: 1, labelBackgroundColor: "#D4A843" },
+        horzLine: { color: "#D4A843", style: 2 as LineStyle, width: 1, labelBackgroundColor: "#D4A843" },
+      },
+      timeScale: {
+        borderColor: "#1A1D29",
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      rightPriceScale: {
+        borderColor: "#1A1D29",
+        textColor: "#A0A0B0",
+      },
+      handleScroll: true,
+      handleScale: true,
+      width: container.clientWidth,
+      height: container.clientHeight,
+    })
 
-    const w = rect.width
-    const h = rect.height
-    const pad = { top: 20, bottom: 20, left: 50, right: 20 }
+    chartRef.current = chart
 
-    const data = [...history]
-    if (currentPrice) data.push(currentPrice)
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: "#00C853",
+      downColor: "#FF1744",
+      borderDownColor: "#FF1744",
+      borderUpColor: "#00C853",
+      wickDownColor: "#FF1744",
+      wickUpColor: "#00C853",
+      priceFormat: {
+        type: "price",
+        precision: digits[symbol] || 5,
+        minMove: 1 / Math.pow(10, digits[symbol] || 5),
+      },
+    })
 
-    const min = Math.min(...data)
-    const max = Math.max(...data)
-    const range = max - min || 1
+    seriesRef.current = series
 
-    const xScale = (i: number) => pad.left + (i / (data.length - 1)) * (w - pad.left - pad.right)
-    const yScale = (v: number) => pad.top + (1 - (v - min) / range) * (h - pad.top - pad.bottom)
+    const interval = 60
+    const candles = generateCandles(symbol, 240, interval)
+    dataRef.current = candles
+    series.setData(candles)
 
-    ctx.clearRect(0, 0, w, h)
+    chart.timeScale().fitContent()
 
-    ctx.strokeStyle = "#1A1D29"
-    ctx.lineWidth = 1
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (i / 4) * (h - pad.top - pad.bottom)
-      ctx.beginPath()
-      ctx.moveTo(pad.left, y)
-      ctx.lineTo(w - pad.right, y)
-      ctx.stroke()
-
-      const val = max - (i / 4) * range
-      ctx.fillStyle = "#A0A0B0"
-      ctx.font = "10px monospace"
-      ctx.textAlign = "right"
-      ctx.fillText(val.toFixed(symbol === "BTCUSD" || symbol === "ETHUSD" ? 0 : 5), pad.left - 5, y + 3)
+    const handleResize = () => {
+      const rect = container.getBoundingClientRect()
+      chart.applyOptions({ width: rect.width, height: rect.height })
     }
 
-    const gradient = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom)
-    gradient.addColorStop(0, "rgba(212, 168, 67, 0.2)")
-    gradient.addColorStop(1, "rgba(212, 168, 67, 0)")
+    window.addEventListener("resize", handleResize)
 
-    ctx.beginPath()
-    data.forEach((v, i) => {
-      const x = xScale(i)
-      const y = yScale(v)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.strokeStyle = "#D4A843"
-    ctx.lineWidth = 2
-    ctx.stroke()
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      if (tickRef.current) clearInterval(tickRef.current)
+      chart.remove()
+      chartRef.current = null
+      seriesRef.current = null
+    }
+  }, [symbol])
 
-    ctx.lineTo(xScale(data.length - 1), h - pad.bottom)
-    ctx.lineTo(xScale(0), h - pad.bottom)
-    ctx.closePath()
-    ctx.fillStyle = gradient
-    ctx.fill()
+  useEffect(() => {
+    const series = seriesRef.current
+    if (!series) return
 
+    tickCountRef.current = 0
+
+    if (tickRef.current) clearInterval(tickRef.current)
+
+    const data = dataRef.current
+    if (data.length === 0) return
+
+    const last = data[data.length - 1]
+    currentCandleRef.current = { ...last }
+
+    tickRef.current = setInterval(() => {
+      const s = seriesRef.current
+      if (!s) return
+
+      const base = baselines[symbol] || 1.0
+      const vol = base * 0.0002
+      const tick = (Math.random() - 0.5) * vol
+      const candle = currentCandleRef.current
+      if (!candle) return
+
+      tickCountRef.current++
+
+      const newClose = Number((candle.close + tick).toFixed(5))
+
+      if (tickCountRef.current >= 10) {
+        const newCandle: CandlestickData = {
+          time: (candle.time as number) + 60,
+          open: newClose,
+          high: newClose,
+          low: newClose,
+          close: newClose,
+        } as CandlestickData
+        s.update(newCandle)
+        currentCandleRef.current = newCandle
+        dataRef.current.push(newCandle)
+        tickCountRef.current = 0
+      } else {
+        const updated: CandlestickData = {
+          time: candle.time,
+          open: candle.open,
+          high: Number(Math.max(candle.high, candle.high + tick).toFixed(5)),
+          low: Number(Math.min(candle.low, candle.low + tick).toFixed(5)),
+          close: newClose,
+        } as CandlestickData
+        s.update(updated)
+        currentCandleRef.current = updated
+      }
+    }, 2000)
+
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current)
+    }
+  }, [symbol])
+
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return
+    const series = seriesRef.current
+    const lines: any[] = []
     const myPositions = positions.filter((p) => p.symbol === symbol)
     myPositions.forEach((p) => {
-      const x = xScale(data.length - 1)
-      const y = yScale(p.open_price)
-      ctx.beginPath()
-      ctx.arc(x, y, 4, 0, Math.PI * 2)
-      ctx.fillStyle = p.type === "buy" ? "#00C853" : "#FF1744"
-      ctx.fill()
-      ctx.strokeStyle = "#FFFFFF"
-      ctx.lineWidth = 1
-      ctx.stroke()
-
-      ctx.fillStyle = p.type === "buy" ? "#00C853" : "#FF1744"
-      ctx.font = "10px monospace"
-      ctx.textAlign = "left"
-      ctx.fillText(`${p.type.toUpperCase()} ${p.volume}`, x + 8, y + 3)
+      try {
+        const line = series.createPriceLine({
+          price: p.open_price,
+          color: p.type === "buy" ? "#00C853" : "#FF1744",
+          lineWidth: 2,
+          lineStyle: 2 as LineStyle,
+          axisLabelVisible: true,
+          title: `${p.type.toUpperCase()} ${p.volume}`,
+        })
+        lines.push(line)
+      } catch {}
     })
+    return () => {
+      lines.forEach((l) => {
+        try { series.removePriceLine(l) } catch {}
+      })
+    }
+  }, [positions, symbol])
 
-    const lastVal = currentPrice || data[data.length - 1]
-    ctx.fillStyle = "#F5F5F5"
-    ctx.font = "bold 14px monospace"
-    ctx.textAlign = "right"
-    ctx.fillText(lastVal.toFixed(symbol === "BTCUSD" || symbol === "ETHUSD" ? 2 : 5), w - pad.right, pad.top + 14)
-  }, [symbol, currentPrice, history, positions])
-
-  return <canvas ref={canvasRef} className="w-full h-full" />
+  return <div ref={containerRef} className="w-full h-full" />
 }
