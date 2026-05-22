@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { getRealTimePrice } from "@/lib/prices"
+import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
 function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number): number {
@@ -32,7 +32,7 @@ export async function GET() {
       const price = await getRealTimePrice(t.symbol)
       if (price) {
         const direction = t.type === "buy" ? 1 : -1
-        const rawPnl = Number((direction * (price.mid - Number(t.open_price)) * Number(t.volume) * 100000).toFixed(2))
+        const rawPnl = Number((direction * (price.mid - Number(t.open_price)) * Number(t.volume) * contractSize(t.symbol)).toFixed(2))
         const pnl = biasedPnl(rawPnl, ageMin, durationMin)
         totalEquity.change += pnl
         return {

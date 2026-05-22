@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { getRealTimePrice } from "@/lib/prices"
+import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
 
 function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number): number {
@@ -33,7 +33,7 @@ export async function POST(
 
   const closePrice = trade.type === "buy" ? price.bid : price.ask
   const direction = trade.type === "buy" ? 1 : -1
-  const rawProfit = Number((direction * (closePrice - Number(trade.open_price)) * Number(trade.volume) * 100000).toFixed(2))
+  const rawProfit = Number((direction * (closePrice - Number(trade.open_price)) * Number(trade.volume) * contractSize(trade.symbol)).toFixed(2))
 
   const ageMs = Date.now() - new Date(trade.created_at).getTime()
   const ageMin = ageMs / 60000

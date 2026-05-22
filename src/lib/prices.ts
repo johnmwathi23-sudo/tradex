@@ -30,6 +30,16 @@ export function getBaseline(symbol: string): number {
   return baselines[symbol] || 1.0
 }
 
+export function contractSize(symbol: string): number {
+  const s = symbol.toUpperCase()
+  if (["XAUUSD"].includes(s)) return 100
+  if (["XAGUSD"].includes(s)) return 5000
+  if (["USOIL"].includes(s)) return 100
+  if (["SP500", "NAS100", "UK100"].includes(s)) return 1
+  if (["BTCUSD", "ETHUSD"].includes(s)) return 1
+  return 100000
+}
+
 export async function getRealTimePrice(symbol: string): Promise<{
   bid: number; ask: number; spread: number; mid: number; source: string
 } | null> {
