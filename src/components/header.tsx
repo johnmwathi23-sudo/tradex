@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { Menu, X, LogOut, User } from "lucide-react"
+import { Menu, X, LogOut, User, Wallet } from "lucide-react"
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -21,9 +21,25 @@ const navLinks = [
 
 export function Header() {
   const [open, setOpen] = useState(false)
+  const [balance, setBalance] = useState<number | null>(null)
   const { user } = useAuth()
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    if (!user) { setBalance(null); return }
+    let cancelled = false
+    fetch("/api/mt/accounts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        const list = Array.isArray(data) ? data : []
+        const acct = list.find((a: any) => a.is_default) || list[0]
+        if (acct) setBalance(Number(acct.balance))
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [user])
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -67,6 +83,12 @@ export function Header() {
                     Dashboard
                   </Button>
                 </Link>
+                {balance != null && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4A843]/10 border border-[#D4A843]/20">
+                    <Wallet size={14} className="text-[#D4A843]" />
+                    <span className="text-sm font-semibold text-[#D4A843]">${balance.toFixed(2)}</span>
+                  </div>
+                )}
                 <button onClick={handleLogout}>
                   <Button variant="outline" size="sm">
                     <LogOut size={16} className="mr-1.5" />

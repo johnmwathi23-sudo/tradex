@@ -46,11 +46,8 @@ export async function getRealTimePrice(symbol: string): Promise<{
   const s = symbol.toUpperCase()
   const cached = cache.get(s)
   if (cached && Date.now() - cached.time < CACHE_TTL) {
-    return {
-      bid: cached.bid, ask: cached.ask,
-      spread: Number(((cached.ask - cached.bid)).toFixed(5)),
-      mid: (cached.bid + cached.ask) / 2, source: "simulated",
-    }
+    const mid = (cached.bid + cached.ask) / 2
+    return { bid: mid, ask: mid, spread: 0, mid, source: "simulated" }
   }
 
   seedDrift(s)
@@ -59,13 +56,7 @@ export async function getRealTimePrice(symbol: string): Promise<{
   const midPrice = Number((base + noise + drift[s]!).toFixed(5))
   drift[s]! += (Math.random() - 0.5) * 0.00005
 
-  const spread = midPrice * getSpread(s)
-  const isCrypto = s === "BTCUSD" || s === "ETHUSD"
-  const decimals = isCrypto ? 2 : 5
-  const bid = Number((midPrice - spread / 2).toFixed(decimals))
-  const ask = Number((midPrice + spread / 2).toFixed(decimals))
+  cache.set(s, { bid: midPrice, ask: midPrice, time: Date.now() })
 
-  cache.set(s, { bid, ask, time: Date.now() })
-
-  return { bid, ask, spread: Number(spread.toFixed(5)), mid: midPrice, source: "simulated" }
+  return { bid: midPrice, ask: midPrice, spread: 0, mid: midPrice, source: "simulated" }
 }

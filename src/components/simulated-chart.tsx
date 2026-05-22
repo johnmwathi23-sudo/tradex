@@ -27,7 +27,7 @@ type Position = {
   volume: number
 }
 
-function generateCandles(symbol: string, count: number, interval: number): CandlestickData[] {
+function generateCandles(symbol: string, count: number, interval: number, currentPrice?: number | null): CandlestickData[] {
   const base = baselines[symbol] || 1.0
   const now = Math.floor(Date.now() / 1000)
   const result: CandlestickData[] = []
@@ -44,12 +44,22 @@ function generateCandles(symbol: string, count: number, interval: number): Candl
     result.push({ time, open, high, low, close } as CandlestickData)
   }
 
+  if (currentPrice != null) {
+    const offset = currentPrice - result[result.length - 1].close
+    for (const c of result) {
+      c.close = Number((c.close + offset).toFixed(5))
+      c.open = Number((c.open + offset).toFixed(5))
+      c.high = Number((c.high + offset).toFixed(5))
+      c.low = Number((c.low + offset).toFixed(5))
+    }
+  }
+
   return result
 }
 
 export default function SimulatedChart({
   symbol,
-  currentPrice: _currentPrice,
+  currentPrice,
   positions = [],
 }: {
   symbol: string
@@ -115,7 +125,7 @@ export default function SimulatedChart({
     seriesRef.current = series
 
     const interval = 60
-    const candles = generateCandles(symbol, 240, interval)
+    const candles = generateCandles(symbol, 240, interval, currentPrice)
     dataRef.current = candles
     series.setData(candles)
 
@@ -194,6 +204,21 @@ export default function SimulatedChart({
       if (tickRef.current) clearInterval(tickRef.current)
     }
   }, [symbol])
+
+  useEffect(() => {
+    if (!seriesRef.current || !currentCandleRef.current || currentPrice == null) return
+    const s = seriesRef.current
+    const old = currentCandleRef.current
+    const updated: CandlestickData = {
+      time: old.time,
+      open: old.open,
+      high: Number(Math.max(old.high, currentPrice).toFixed(5)),
+      low: Number(Math.min(old.low, currentPrice).toFixed(5)),
+      close: currentPrice,
+    } as CandlestickData
+    s.update(updated)
+    currentCandleRef.current = updated
+  }, [currentPrice])
 
   useEffect(() => {
     if (!chartRef.current || !seriesRef.current) return
