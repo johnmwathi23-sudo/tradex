@@ -132,7 +132,7 @@ export default function MtAccountsPage() {
           {showDemo && !demoResult && (
             <form onSubmit={handleCreateDemo} className="space-y-4">
               <h3 className="text-lg font-semibold text-[#F5F5F5]">Create Demo Account</h3>
-              <p className="text-sm text-[#A0A0B0]">Get a $100,000 virtual trading account</p>
+              <p className="text-sm text-[#A0A0B0]">Get a $500 virtual trading account</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Platform</label>

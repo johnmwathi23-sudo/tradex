@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const demoLogin = `${1000000 + Math.floor(Math.random() * 9000000)}`
   const demoPassword = `Demo${Math.random().toString(36).slice(2, 10)}`
   const demoServer = demoAccounts[platform].server
-  const balance = 100000.00
+  const balance = 500.00
 
   const { data, error } = await supabase
     .from("mt_accounts")
