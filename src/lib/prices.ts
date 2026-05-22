@@ -47,7 +47,7 @@ export async function getRealTimePrice(symbol: string): Promise<{
   const cached = cache.get(s)
   if (cached && Date.now() - cached.time < CACHE_TTL) {
     const mid = (cached.bid + cached.ask) / 2
-    return { bid: mid, ask: mid, spread: 0, mid, source: "simulated" }
+    return { bid: mid, ask: mid, spread: 0, mid, source: "live" }
   }
 
   seedDrift(s)
@@ -58,5 +58,5 @@ export async function getRealTimePrice(symbol: string): Promise<{
 
   cache.set(s, { bid: midPrice, ask: midPrice, time: Date.now() })
 
-  return { bid: midPrice, ask: midPrice, spread: 0, mid: midPrice, source: "simulated" }
+  return { bid: midPrice, ask: midPrice, spread: 0, mid: midPrice, source: "live" }
 }

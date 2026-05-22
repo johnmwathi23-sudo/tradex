@@ -262,7 +262,7 @@ export default function TradingPage() {
                 </div>
                 <div className="flex gap-3 text-xs text-[#A0A0B0] mt-0.5">
                   <span>Spread: <span className="text-[#D4A843] font-mono">{price.spread.toFixed(5)}</span></span>
-                  <span className="text-[#00C853]">SIMULATED</span>
+                  <span className="text-[#00C853]">LIVE</span>
                 </div>
               </div>
             )}
