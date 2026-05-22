@@ -29,19 +29,32 @@ export function Header() {
   useEffect(() => {
     if (!user) { setBalance(null); return }
     let cancelled = false
-    function fetchBalance() {
-      fetch("/api/mt/accounts")
-        .then((r) => r.json())
-        .then((data) => {
-          if (cancelled) return
-          const list = Array.isArray(data) ? data : []
-          const acct = list.find((a: any) => a.is_default) || list[0]
-          setBalance(acct ? Number(acct.balance) : 0)
-        })
-        .catch(() => {})
+    async function fetchBalance() {
+      try {
+        const [accountsRes, ordersRes] = await Promise.all([
+          fetch("/api/mt/accounts"),
+          fetch("/api/mt/orders")
+        ])
+        if (cancelled) return
+        const accounts = await accountsRes.json()
+        const orders = await ordersRes.json()
+        const list = Array.isArray(accounts) ? accounts : []
+        const acct = list.find((a: any) => a.is_default) || list[0]
+        if (acct) {
+          let totalPnl = 0
+          if (Array.isArray(orders)) {
+            for (const t of orders) {
+              if (t.status === "open") totalPnl += Number(t.unrealized_pnl) || 0
+            }
+          }
+          setBalance(Math.max(Number(acct.balance) + totalPnl, 0))
+        } else {
+          setBalance(0)
+        }
+      } catch {}
     }
     fetchBalance()
-    const interval = setInterval(fetchBalance, 10000)
+    const interval = setInterval(fetchBalance, 5000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [user])
 
