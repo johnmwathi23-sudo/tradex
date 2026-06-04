@@ -13,6 +13,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile || (profile.kyc_status !== "submitted" && profile.kyc_status !== "approved")) {
+    return NextResponse.json({ error: "KYC documents must be submitted before you can start copy trading." }, { status: 403 })
+  }
+
   const { masterTraderId, allocationPercentage, allocatedAmount, maxDrawdown, autoTopup } = await request.json()
 
   if (!masterTraderId || allocationPercentage == null) {

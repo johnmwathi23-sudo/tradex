@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Smartphone, CreditCard, Bitcoin, Building2 } from "lucide-react"
+import { Smartphone, CreditCard, Bitcoin, Building2, ShieldAlert } from "lucide-react"
+import Link from "next/link"
 
 const methods = [
   { id: "mpesa", label: "M-Pesa", icon: Smartphone },
@@ -18,6 +19,16 @@ export default function WithdrawalPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState("")
+  const [kycStatus, setKycStatus] = useState<string | null>(null)
+  const [kycLoading, setKycLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/kyc/status")
+      .then((r) => r.json())
+      .then((data) => setKycStatus(data.kyc_status))
+      .catch(() => setKycStatus("pending"))
+      .finally(() => setKycLoading(false))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -58,6 +69,30 @@ export default function WithdrawalPage() {
         <h1 className="text-2xl font-bold text-[#F5F5F5]">Withdraw</h1>
         <p className="text-sm text-[#A0A0B0] mt-1">Request a withdrawal to your preferred method</p>
       </div>
+
+      {!kycLoading && kycStatus !== "approved" && (
+        <Card className="p-6 mb-8 border-[#D4A843]/30 bg-[#D4A843]/5">
+          <div className="flex items-start gap-4">
+            <ShieldAlert size={24} className="text-[#D4A843] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1">KYC Verification Required</h3>
+              <p className="text-xs text-[#A0A0B0] mb-3">
+                {kycStatus === "pending" || kycStatus === null
+                  ? "You need to upload your KYC documents before you can withdraw funds."
+                  : kycStatus === "submitted"
+                  ? "Your KYC documents are under review. Withdrawals will be available once approved."
+                  : "Your KYC was rejected. Please re-upload your documents."}
+              </p>
+              <Link
+                href="/dashboard/mt-accounts"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#D4A843] text-[#0A0B0F] text-xs font-semibold hover:opacity-90 transition-opacity"
+              >
+                Go to KYC Upload
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {methods.map((m) => {

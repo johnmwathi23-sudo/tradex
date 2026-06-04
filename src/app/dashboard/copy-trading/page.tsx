@@ -11,8 +11,9 @@ import { cn } from "@/lib/utils"
 import {
   TrendingUp, Users, Star, Activity, Copy,
   Search, ChevronDown, ChevronUp, Settings, Pause,
-  Play, ArrowUpDown, AlertTriangle, X
+  Play, ArrowUpDown, AlertTriangle, X, ShieldAlert
 } from "lucide-react"
+import Link from "next/link"
 
 type MasterTrader = {
   id: string
@@ -69,6 +70,8 @@ export default function CopyTradingPage() {
   const [masters, setMasters] = useState<MasterTrader[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
+  const [kycStatus, setKycStatus] = useState<string | null>(null)
+  const [kycLoading, setKycLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [riskFilter, setRiskFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("total_followers")
@@ -103,7 +106,15 @@ export default function CopyTradingPage() {
     [subscriptions]
   )
 
+  const kycCanCopy = kycStatus === "submitted" || kycStatus === "approved"
+
   useEffect(() => {
+    fetch("/api/kyc/status")
+      .then((r) => r.json())
+      .then((data) => setKycStatus(data.kyc_status))
+      .catch(() => setKycStatus("pending"))
+      .finally(() => setKycLoading(false))
+
     Promise.all([
       fetch("/api/copy-trading/masters").then((r) => {
         if (!r.ok) throw new Error("Failed to load masters")
@@ -307,6 +318,28 @@ export default function CopyTradingPage() {
     <div>
       <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Copy Trading</h1>
 
+      {!kycLoading && kycStatus !== "submitted" && kycStatus !== "approved" && (
+        <Card className="p-5 mb-6 border-[#D4A843]/30 bg-[#D4A843]/5">
+          <div className="flex items-start gap-3">
+            <ShieldAlert size={20} className="text-[#D4A843] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1">KYC Documents Required</h3>
+              <p className="text-xs text-[#A0A0B0] mb-3">
+                {kycStatus === "rejected"
+                  ? "Your KYC was rejected. Please re-upload your documents to access copy trading."
+                  : "You need to upload your KYC documents before you can start copy trading."}
+              </p>
+              <Link
+                href="/dashboard/mt-accounts"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#D4A843] text-[#0A0B0F] text-xs font-semibold hover:opacity-90 transition-opacity"
+              >
+                Upload KYC
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         {[
           { icon: Users, value: `${masters.length}+`, label: "Master Traders", color: "#D4A843" },
@@ -491,6 +524,8 @@ export default function CopyTradingPage() {
                       variant="primary"
                       size="sm"
                       onClick={() => openFollowDialog(trader)}
+                      disabled={!kycCanCopy}
+                      title={!kycCanCopy ? "Upload KYC documents to start copy trading" : ""}
                     >
                       <Copy size={14} className="mr-1" />
                       Copy

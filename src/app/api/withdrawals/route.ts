@@ -1,10 +1,21 @@
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("kyc_status")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile || profile.kyc_status !== "approved") {
+    return NextResponse.json({ error: "KYC verification must be approved before withdrawing. Please upload your KYC documents and wait for approval." }, { status: 403 })
+  }
 
   const { amount, method, details } = await req.json()
   if (!amount || amount < 10) {
