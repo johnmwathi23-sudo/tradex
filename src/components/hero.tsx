@@ -5,9 +5,10 @@ import { TrendingUp, Shield, Zap } from "lucide-react"
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#D4A843]/5 via-transparent to-transparent pointer-events-none" />
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#D4A843]/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-[#D4A843]/3 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#D4A843]/5 via-transparent to-transparent pointer-events-none animate-shimmer" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#D4A843]/5 rounded-full blur-[120px] pointer-events-none animate-float-slow" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-[#D4A843]/3 rounded-full blur-[120px] pointer-events-none animate-float-slow2" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#D4A843]/[0.02] rounded-full blur-[150px] pointer-events-none animate-pulse-glow" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-3xl">
