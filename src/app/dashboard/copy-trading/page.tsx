@@ -433,18 +433,22 @@ export default function CopyTradingPage() {
       )}
 
       <div className="space-y-4">
-        {filteredMasters.map((trader) => {
+        {filteredMasters.map((trader, idx) => {
           const isFollowing = subscribedIds.has(trader.id)
           const sub = subMap[trader.id]
 
           return (
-            <Card key={trader.id} className="p-5">
+            <Card
+              key={trader.id}
+              className="p-5 hover:scale-[1.01] transition-all duration-200 animate-fadeIn"
+              style={{ animationDelay: `${idx * 50}ms` }}
+            >
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] font-bold text-lg">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] font-bold text-lg shrink-0">
                     {trader.display_name[0]}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-[#F5F5F5]">{trader.display_name}</h3>
                       {trader.is_verified && <Badge variant="verified">Verified</Badge>}
@@ -534,13 +538,12 @@ export default function CopyTradingPage() {
                   <button
                     onClick={() => handleExpand(trader.id)}
                     disabled={expandingLoading}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[#A0A0B0] hover:text-[#D4A843] hover:bg-white/5 transition disabled:opacity-50"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[#A0A0B0] hover:text-[#D4A843] hover:bg-white/5 transition-all duration-200 disabled:opacity-50"
                   >
-                    {expandedMasterId === trader.id ? (
-                      <ChevronUp size={16} />
-                    ) : (
-                      <ChevronDown size={16} />
-                    )}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-300 ${expandedMasterId === trader.id ? "rotate-180" : ""}`}
+                    />
                   </button>
                 </div>
               </div>
@@ -570,62 +573,62 @@ export default function CopyTradingPage() {
                 </div>
               )}
 
-              {expandedMasterId === trader.id && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  {expandingLoading ? (
-                    <div className="flex justify-center py-6">
-                      <div className="animate-spin w-5 h-5 border-2 border-[#D4A843] border-t-transparent rounded-full" />
-                    </div>
-                  ) : expandedData ? (
-                    <div>
-                      <h4 className="text-sm font-semibold text-[#F5F5F5] mb-3 flex items-center gap-2">
-                        <Activity size={14} className="text-[#D4A843]" />
-                        Recent Trades
-                      </h4>
-                      {expandedData.recent_trades.length === 0 ? (
-                        <p className="text-xs text-[#A0A0B0] py-3 text-center">No recent trades</p>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-[#A0A0B0] border-b border-white/5">
-                                <th className="text-left py-2 pr-3 font-medium">Symbol</th>
-                                <th className="text-left py-2 pr-3 font-medium">Type</th>
-                                <th className="text-right py-2 pr-3 font-medium">Volume</th>
-                                <th className="text-right py-2 pr-3 font-medium">Price</th>
-                                <th className="text-right py-2 pr-3 font-medium">Profit</th>
-                                <th className="text-right py-2 font-medium">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {expandedData.recent_trades.map((trade) => (
-                                <tr key={trade.id} className="border-b border-white/5 last:border-0">
-                                  <td className="py-2 pr-3 text-[#F5F5F5] font-medium">{trade.symbol}</td>
-                                  <td className={cn("py-2 pr-3", trade.type === "buy" ? "text-[#00C853]" : "text-[#FF1744]")}>
-                                    {trade.type.toUpperCase()}
-                                  </td>
-                                  <td className="py-2 pr-3 text-right text-[#F5F5F5]">{trade.volume}</td>
-                                  <td className="py-2 pr-3 text-right text-[#F5F5F5]">${Number(trade.open_price).toFixed(5)}</td>
-                                  <td className={cn("py-2 pr-3 text-right", (trade.profit ?? 0) >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
-                                    {trade.profit != null ? `${trade.profit >= 0 ? "+" : ""}$${Number(trade.profit).toFixed(2)}` : "—"}
-                                  </td>
-                                  <td className="py-2 text-right">
-                                    <Badge variant={trade.status === "open" ? "active" : "default"}>
-                                      {trade.status}
-                                    </Badge>
-                                  </td>
+              <div className={`expand-content ${expandedMasterId === trader.id ? "open" : ""}`}>
+                <div>
+                  <div className="mt-4 pt-4 border-t border-white/5">
+                    {expandingLoading && expandedMasterId === trader.id ? (
+                      <div className="flex justify-center py-6">
+                        <div className="animate-spin w-5 h-5 border-2 border-[#D4A843] border-t-transparent rounded-full" />
+                      </div>
+                    ) : expandedData && expandedMasterId === trader.id ? (
+                      <div className="animate-fadeIn">
+                        <h4 className="text-sm font-semibold text-[#F5F5F5] mb-3 flex items-center gap-2">
+                          <Activity size={14} className="text-[#D4A843]" />
+                          Recent Trades
+                        </h4>
+                        {expandedData.recent_trades.length === 0 ? (
+                          <p className="text-xs text-[#A0A0B0] py-3 text-center">No recent trades</p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-[#A0A0B0] border-b border-white/5">
+                                  <th className="text-left py-2 pr-3 font-medium">Symbol</th>
+                                  <th className="text-left py-2 pr-3 font-medium">Type</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Volume</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Price</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Profit</th>
+                                  <th className="text-right py-2 font-medium">Status</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[#A0A0B0] py-3 text-center">Failed to load trades</p>
-                  )}
+                              </thead>
+                              <tbody>
+                                {expandedData.recent_trades.map((trade) => (
+                                  <tr key={trade.id} className="border-b border-white/5 last:border-0">
+                                    <td className="py-2 pr-3 text-[#F5F5F5] font-medium">{trade.symbol}</td>
+                                    <td className={cn("py-2 pr-3", trade.type === "buy" ? "text-[#00C853]" : "text-[#FF1744]")}>
+                                      {trade.type.toUpperCase()}
+                                    </td>
+                                    <td className="py-2 pr-3 text-right text-[#F5F5F5]">{trade.volume}</td>
+                                    <td className="py-2 pr-3 text-right text-[#F5F5F5]">${Number(trade.open_price).toFixed(5)}</td>
+                                    <td className={cn("py-2 pr-3 text-right", (trade.profit ?? 0) >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                                      {trade.profit != null ? `${trade.profit >= 0 ? "+" : ""}$${Number(trade.profit).toFixed(2)}` : "—"}
+                                    </td>
+                                    <td className="py-2 text-right">
+                                      <Badge variant={trade.status === "open" ? "active" : "default"}>
+                                        {trade.status}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              )}
+              </div>
             </Card>
           )
         })}

@@ -38,3 +38,32 @@ body {
   background: rgba(212, 168, 67, 0.3);
   color: #F5F5F5;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-fadeIn-stagger {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.expand-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease-out, opacity 0.25s ease-out;
+  opacity: 0;
+}
+
+.expand-content.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.expand-content > div {
+  overflow: hidden;
+}
