@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 
+const MIN_ACTIVE_DAYS = 5
+
 export async function PATCH(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -52,6 +54,25 @@ export async function PATCH(
     if (!["active", "paused", "stopped"].includes(body.status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
     }
+
+    if (body.status === "paused" || body.status === "stopped") {
+      const { data: sub } = await supabaseAdmin
+        .from("copy_trade_subscriptions")
+        .select("started_at, status")
+        .eq("id", id)
+        .single()
+
+      if (sub && sub.status === "active") {
+        const daysActive = (Date.now() - new Date(sub.started_at).getTime()) / (1000 * 60 * 60 * 24)
+        if (daysActive < MIN_ACTIVE_DAYS) {
+          const remainingDays = Math.ceil(MIN_ACTIVE_DAYS - daysActive)
+          return NextResponse.json({
+            error: `Cannot pause/stop within ${MIN_ACTIVE_DAYS} days of starting. ${remainingDays} day${remainingDays > 1 ? "s" : ""} remaining.`
+          }, { status: 403 })
+        }
+      }
+    }
+
     updates.status = body.status
     if (body.status === "stopped") {
       updates.ended_at = new Date().toISOString()

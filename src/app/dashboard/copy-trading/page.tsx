@@ -37,6 +37,7 @@ type Subscription = {
   max_drawdown: number
   auto_topup: boolean
   status: string
+  started_at: string
 }
 
 type Trade = {
@@ -53,6 +54,16 @@ type Trade = {
 type MasterDetail = MasterTrader & { recent_trades: Trade[] }
 
 const RISK_COLORS = { low: "#00C853", medium: "#D4A843", high: "#FF1744" } as const
+const MIN_ACTIVE_DAYS = 5
+
+function getLockRemainingDays(startedAt: string): number {
+  const daysActive = (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)
+  return Math.ceil(MIN_ACTIVE_DAYS - daysActive)
+}
+
+function isLocked(startedAt: string): boolean {
+  return getLockRemainingDays(startedAt) > 0
+}
 
 export default function CopyTradingPage() {
   const [masters, setMasters] = useState<MasterTrader[]>([])
@@ -443,8 +454,8 @@ export default function CopyTradingPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handlePauseToggle(sub)}
-                        disabled={pauseLoading === sub.id}
-                        title={sub.status === "active" ? "Pause" : "Resume"}
+                        disabled={pauseLoading === sub.id || (sub.status === "active" && isLocked(sub.started_at))}
+                        title={sub.status === "active" ? (isLocked(sub.started_at) ? `${getLockRemainingDays(sub.started_at)}d lock remaining` : "Pause") : "Resume"}
                         className="!p-2"
                       >
                         {pauseLoading === sub.id ? (
@@ -461,7 +472,9 @@ export default function CopyTradingPage() {
                         onClick={() =>
                           setUnfollowTarget({ subId: sub.id, name: trader.display_name })
                         }
-                        className="border-[#FF1744]/30 text-[#FF1744] hover:bg-[#FF1744]/10"
+                        disabled={sub.status === "active" && isLocked(sub.started_at)}
+                        className="border-[#FF1744]/30 text-[#FF1744] hover:bg-[#FF1744]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={sub.status === "active" && isLocked(sub.started_at) ? `${getLockRemainingDays(sub.started_at)}d lock remaining` : "Stop"}
                       >
                         <X size={14} className="mr-1" />
                         Stop
@@ -511,6 +524,11 @@ export default function CopyTradingPage() {
                       {sub.auto_topup ? "On" : "Off"}
                     </strong>
                   </span>
+                  {sub.status === "active" && isLocked(sub.started_at) && (
+                    <span className="text-[#D4A843] font-medium">
+                      Locked: {getLockRemainingDays(sub.started_at)}d remaining
+                    </span>
+                  )}
                   <Badge variant={sub.status as keyof typeof RISK_COLORS}>
                     {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
                   </Badge>
