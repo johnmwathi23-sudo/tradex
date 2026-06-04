@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function POST(
   _request: Request,
@@ -16,11 +17,10 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .update({ status: "stopped", ended_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("follower_id", user.id)
     .select()
     .single()
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function PATCH(
   _request: Request,
@@ -61,11 +62,10 @@ export async function PATCH(
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .update(updates)
     .eq("id", id)
-    .eq("follower_id", user.id)
     .select("*, master_trader:master_traders(*)")
     .single()
 

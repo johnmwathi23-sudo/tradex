@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid allocated amount" }, { status: 400 })
   }
 
-  const { data: existing } = await supabase
+  const { data: existing } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .select("id, status, allocated_amount, max_drawdown, auto_topup")
     .eq("follower_id", user.id)
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     if (existing.status === "active") {
       return NextResponse.json({ error: "Already following this trader" }, { status: 409 })
     }
-    const { data: resumed, error: resumeErr } = await supabase
+    const { data: resumed, error: resumeErr } = await supabaseAdmin
       .from("copy_trade_subscriptions")
       .update({
         status: "active",
@@ -50,7 +51,6 @@ export async function POST(request: Request) {
         ended_at: null,
       })
       .eq("id", existing.id)
-      .eq("follower_id", user.id)
       .select("*, master_trader:master_traders(*)")
       .single()
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json(resumed, { status: 200 })
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .insert({
       follower_id: user.id,
