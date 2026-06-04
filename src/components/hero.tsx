@@ -5,16 +5,11 @@ import { TrendingUp, Shield, Zap } from "lucide-react"
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08) 0%, transparent 40%, transparent 60%, rgba(212,168,67,0.05) 100%)", backgroundSize: "200% 200%", animation: "gradientShift 12s ease-in-out infinite" }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08) 0%, transparent 40%, transparent 60%, rgba(212,168,67,0.05) 100%)", willChange: "transform" }} />
       
-      <div className="absolute top-1/4 -left-16 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.15) 0%, transparent 70%)", animation: "orbFloat1 18s ease-in-out infinite, orbPulse 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-1/3 -right-16 w-80 h-80 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%)", animation: "orbFloat2 22s ease-in-out infinite" }} />
-      <div className="absolute top-1/3 left-1/2 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.06) 0%, transparent 70%)", animation: "orbFloat1 25s ease-in-out infinite, orbPulse 8s ease-in-out infinite" }} />
-
-      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(212,168,67,0.3), transparent)", animation: "lineMove 6s linear infinite" }} />
-      <div className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(212,168,67,0.2), transparent)", animation: "lineMove 8s linear infinite" }} />
-      <div className="absolute top-0 bottom-0 left-[15%] w-px pointer-events-none" style={{ background: "linear-gradient(180deg, transparent, rgba(212,168,67,0.1), transparent)", animation: "lineMove 10s linear infinite" }} />
-      <div className="absolute top-0 bottom-0 right-[20%] w-px pointer-events-none" style={{ background: "linear-gradient(180deg, transparent, rgba(212,168,67,0.08), transparent)", animation: "lineMove 7s linear infinite" }} />
+      <div className="absolute top-1/4 -left-16 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.15) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat1 18s ease-in-out infinite, orbPulse 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-1/3 -right-16 w-80 h-80 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat2 22s ease-in-out infinite" }} />
+      <div className="absolute top-1/3 left-1/2 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.06) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat1 25s ease-in-out infinite, orbPulse 8s ease-in-out infinite" }} />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-3xl">
