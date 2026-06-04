@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function GET() {
   const supabase = await createClient()
@@ -16,7 +17,7 @@ export async function GET() {
     .from("copy_trade_subscriptions")
     .select("master_trader_id")
     .eq("follower_id", user.id)
-    .eq("status", "active")
+    .in("status", ["active", "paused"])
 
   if (!subscriptions || subscriptions.length === 0) {
     return NextResponse.json([])
@@ -35,7 +36,7 @@ export async function GET() {
     return NextResponse.json([])
   }
 
-  const { data: trades } = await supabase
+  const { data: trades } = await supabaseAdmin
     .from("trades")
     .select("*")
     .in("user_id", masterUserIds)

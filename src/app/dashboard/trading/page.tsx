@@ -4,6 +4,10 @@ import { useEffect, useState, useCallback, useRef, Component } from "react"
 import type { ReactNode } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Dialog } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 import SimulatedChart from "@/components/simulated-chart"
 
@@ -78,6 +82,7 @@ type Price = {
 }
 
 const categories = ["forex", "commodities", "indices", "crypto"]
+
 function formatCountdown(ms: number): string {
   if (ms <= 0) return "0:00"
   const m = Math.floor(ms / 60000)
@@ -89,17 +94,24 @@ export default function TradingPage() {
   const [accounts, setAccounts] = useState<MtAccount[]>([])
   const [instruments, setInstruments] = useState<Instrument[]>([])
   const [openTrades, setOpenTrades] = useState<Trade[]>([])
+  const [closedTrades, setClosedTrades] = useState<Trade[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [selectedInstrument, setSelectedInstrument] = useState("XAUUSD")
   const [activeCategory, setActiveCategory] = useState("forex")
   const [volume, setVolume] = useState("0.5")
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
   const [tradeDuration, setTradeDuration] = useState(5)
+  const [stopLoss, setStopLoss] = useState("")
+  const [takeProfit, setTakeProfit] = useState("")
   const [placing, setPlacing] = useState(false)
-  const [message, setMessage] = useState("")
-  const [closingId, setClosingId] = useState<string | null>(null)
+  const [closing, setClosing] = useState<string | null>(null)
   const [price, setPrice] = useState<Price | null>(null)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
+  const [showConfirmOrder, setShowConfirmOrder] = useState(false)
+  const [showConfirmClose, setShowConfirmClose] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const cancelledRef = useRef(false)
+  const { showToast } = useToast()
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000)
@@ -109,17 +121,25 @@ export default function TradingPage() {
   const fetchPrice = useCallback(async () => {
     try {
       const res = await fetch(`/api/mt/price?symbol=${selectedInstrument}`)
+      if (!res.ok) return
       const data = await res.json()
       if (data.bid) setPrice(data)
-    } catch {}
+    } catch {
+      /* ignore price fetch errors */
+    }
   }, [selectedInstrument])
 
   const fetchTrades = useCallback(async () => {
     try {
       const res = await fetch("/api/mt/orders")
+      if (!res.ok) return
       const data = await res.json()
-      setOpenTrades((Array.isArray(data) ? data : []).filter((t: Trade) => t.status === "open"))
-    } catch {}
+      const list = Array.isArray(data) ? data : []
+      setOpenTrades(list.filter((t: Trade) => t.status === "open"))
+      setClosedTrades(list.filter((t: Trade) => t.status === "closed"))
+    } catch {
+      /* ignore trade fetch errors */
+    }
   }, [])
 
   const refreshAll = useCallback(() => {
@@ -128,12 +148,12 @@ export default function TradingPage() {
   }, [fetchPrice, fetchTrades])
 
   useEffect(() => {
-    let cancelled = false
+    cancelledRef.current = false
 
     fetch("/api/mt/accounts")
       .then((r) => r.json())
       .then((data) => {
-        if (cancelled) return
+        if (cancelledRef.current) return
         const list = Array.isArray(data) ? data : []
         setAccounts(list)
         const def = list.find((a: MtAccount) => a.is_default)
@@ -145,14 +165,14 @@ export default function TradingPage() {
     fetch("/api/mt/instruments")
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setInstruments(Array.isArray(data) ? data : [])
+        if (!cancelledRef.current) setInstruments(Array.isArray(data) ? data : [])
       })
       .catch(() => {})
 
     refreshAll()
     const interval = setInterval(refreshAll, 3000)
     return () => {
-      cancelled = true
+      cancelledRef.current = true
       clearInterval(interval)
     }
   }, [refreshAll])
@@ -162,20 +182,19 @@ export default function TradingPage() {
     fetchPrice()
   }, [selectedInstrument, fetchPrice])
 
-  useEffect(() => {
-    openTrades.forEach((t) => {
-      if (t.close_time && new Date(t.close_time).getTime() <= Date.now()) {
-        closeTrade(t.id)
-      }
-    })
-  }, [now])
-
   const filteredInstruments = instruments.filter((i) => i.category === activeCategory)
 
-  async function placeOrder() {
+  const selectedAccountData = accounts.find((a) => a.id === selectedAccount)
+
+  function handlePlaceOrder() {
+    if (!selectedAccount || !selectedInstrument || !volume) return
+    setShowConfirmOrder(true)
+  }
+
+  async function confirmOrder() {
     if (!selectedAccount || !selectedInstrument || !volume) return
     setPlacing(true)
-    setMessage("")
+    setShowConfirmOrder(false)
     try {
       const res = await fetch("/api/mt/orders", {
         method: "POST",
@@ -186,33 +205,43 @@ export default function TradingPage() {
           type: orderType,
           volume,
           duration: tradeDuration,
+          stop_loss: stopLoss || null,
+          take_profit: takeProfit || null,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots @ ${orderType === "buy" ? data.ask : data.bid} (${tradeDuration}min)`)
+      showToast(`Executed: ${orderType.toUpperCase()} ${selectedInstrument} ${volume} lots`, "success")
       refreshAll()
-      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : [])).catch(() => {})
-    } catch (err: any) {
-      setMessage(`Error: ${err.message}`)
+      const accRes = await fetch("/api/mt/accounts")
+      const accData = await accRes.json()
+      if (Array.isArray(accData)) setAccounts(accData)
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to place order", "error")
     } finally {
       setPlacing(false)
+      setStopLoss("")
+      setTakeProfit("")
     }
   }
 
-  async function closeTrade(tradeId: string) {
-    setClosingId(tradeId)
+  async function confirmClose(tradeId: string) {
+    setClosing(tradeId)
+    setShowConfirmClose(null)
     try {
       const res = await fetch(`/api/mt/orders/${tradeId}/close`, { method: "POST" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setMessage(`Closed ${data.profit >= 0 ? "+" : ""}$${data.profit.toFixed(2)}`)
+      const pnl = data.profit ?? 0
+      showToast(`Closed ${pnl >= 0 ? "+" : ""}$${Number(pnl).toFixed(2)}`, pnl >= 0 ? "success" : "info")
       refreshAll()
-      fetch("/api/mt/accounts").then((r) => r.json()).then((d) => setAccounts(Array.isArray(d) ? d : [])).catch(() => {})
-    } catch (err: any) {
-      setMessage(`Error: ${err.message}`)
+      const accRes = await fetch("/api/mt/accounts")
+      const accData = await accRes.json()
+      if (Array.isArray(accData)) setAccounts(accData)
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Failed to close trade", "error")
     } finally {
-      setClosingId(null)
+      setClosing(null)
     }
   }
 
@@ -223,6 +252,8 @@ export default function TradingPage() {
     open_price: t.open_price,
     volume: t.volume,
   }))
+
+  const totalUnrealizedPnL = openTrades.reduce((sum, t) => sum + (t.unrealized_pnl || 0), 0)
 
   return (
     <ErrorBoundary>
@@ -314,6 +345,17 @@ export default function TradingPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                {selectedAccountData && (
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-[#0A0B0F] text-xs">
+                    <span className="text-[#A0A0B0]">Balance</span>
+                    <span className="text-[#F5F5F5] font-semibold">${Number(selectedAccountData.balance).toFixed(2)}</span>
+                    <span className="text-[#A0A0B0]">Equity</span>
+                    <span className={cn("font-semibold", selectedAccountData.equity >= selectedAccountData.balance ? "text-[#00C853]" : "text-[#FF1744]")}>
+                      ${Number(selectedAccountData.equity).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
                 {price && (
                   <div className="flex justify-between text-sm font-mono px-1 py-1.5 rounded-lg bg-[#0A0B0F]">
                     <span className="text-[#00C853]">Bid {price.bid.toFixed(5)}</span>
@@ -362,12 +404,11 @@ export default function TradingPage() {
 
                 <div>
                   <label className="text-xs text-[#A0A0B0] block mb-1">Volume (Lots)</label>
-                  <input
+                  <Input
                     type="number"
                     value={volume}
                     onChange={(e) => setVolume(e.target.value)}
                     step="0.1" min="0.5" max="100"
-                    className="w-full px-3 py-2 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm"
                   />
                 </div>
 
@@ -386,28 +427,107 @@ export default function TradingPage() {
                   </select>
                 </div>
 
-                <Button variant="primary" className="w-full" onClick={placeOrder} disabled={placing || !price}>
-                  {placing ? "Executing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`}
-                </Button>
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">
+                    Stop Loss <span className="text-[#A0A0B0]/50">(optional)</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={stopLoss}
+                    onChange={(e) => setStopLoss(e.target.value)}
+                    placeholder={orderType === "buy" ? "Below current price" : "Above current price"}
+                    step="0.00001"
+                  />
+                </div>
 
-                {message && (
-                  <div className={cn(
-                    "p-2 rounded-lg text-xs text-center",
-                    message.startsWith("Error") ? "bg-[#FF1744]/10 text-[#FF1744]" : "bg-[#00C853]/10 text-[#00C853]"
-                  )}>
-                    {message}
-                  </div>
-                )}
+                <div>
+                  <label className="text-xs text-[#A0A0B0] block mb-1">
+                    Take Profit <span className="text-[#A0A0B0]/50">(optional)</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={takeProfit}
+                    onChange={(e) => setTakeProfit(e.target.value)}
+                    placeholder={orderType === "buy" ? "Above current price" : "Below current price"}
+                    step="0.00001"
+                  />
+                </div>
+
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={handlePlaceOrder}
+                  disabled={placing || !price}
+                >
+                  {placing ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#0A0B0F] border-t-transparent rounded-full animate-spin" />
+                      Executing...
+                    </span>
+                  ) : (
+                    `${orderType === "buy" ? "Buy" : "Sell"} ${selectedInstrument}`
+                  )}
+                </Button>
               </div>
             )}
           </Card>
 
           <Card className="p-4">
-            <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">
-              Open Positions ({openTrades.length})
-              <span className="text-xs text-[#A0A0B0] font-normal ml-2">updates every 3s</span>
-            </h3>
-            {openTrades.length === 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-[#F5F5F5]">Positions</h3>
+                <Badge variant={openTrades.length > 0 ? "active" : "default"}>
+                  {openTrades.length}
+                </Badge>
+                {totalUnrealizedPnL !== 0 && (
+                  <span className={cn("text-xs font-semibold", totalUnrealizedPnL >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                    {totalUnrealizedPnL >= 0 ? "+" : ""}${totalUnrealizedPnL.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className={cn("px-2 py-1 rounded-lg text-xs font-medium transition", !showHistory ? "bg-[#D4A843]/15 text-[#D4A843]" : "text-[#A0A0B0] hover:text-[#F5F5F5]")}
+                >
+                  Open
+                </button>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className={cn("px-2 py-1 rounded-lg text-xs font-medium transition", showHistory ? "bg-[#D4A843]/15 text-[#D4A843]" : "text-[#A0A0B0] hover:text-[#F5F5F5]")}
+                >
+                  History
+                </button>
+              </div>
+            </div>
+
+            {showHistory ? (
+              closedTrades.length === 0 ? (
+                <p className="text-xs text-[#A0A0B0] text-center py-4">No closed trades</p>
+              ) : (
+                <div className="space-y-2 max-h-[360px] overflow-y-auto">
+                  {closedTrades.map((t) => (
+                    <div key={t.id} className="p-2 rounded-lg bg-[#0A0B0F]">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</span>
+                          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]")}>
+                            {t.type.toUpperCase()}
+                          </span>
+                        </div>
+                        <span className={cn("text-xs font-semibold", (t.profit ?? 0) >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                          {(t.profit ?? 0) >= 0 ? "+" : ""}${(t.profit ?? 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                        <span className="text-[#A0A0B0]">Entry: <span className="text-[#F5F5F5]">{t.open_price}</span></span>
+                        <span className="text-right text-[#A0A0B0]">Vol: <span className="text-[#F5F5F5]">{t.volume}</span></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : openTrades.length === 0 ? (
               <p className="text-xs text-[#A0A0B0] text-center py-4">No open positions</p>
             ) : (
               <div className="space-y-2 max-h-[360px] overflow-y-auto">
@@ -418,49 +538,38 @@ export default function TradingPage() {
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-[#F5F5F5]">{t.symbol}</span>
-                          <span className={cn(
-                            "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                            t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]"
-                          )}>
+                          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", t.type === "buy" ? "bg-[#00C853]/20 text-[#00C853]" : "bg-[#FF1744]/20 text-[#FF1744]")}>
                             {t.type.toUpperCase()}
                           </span>
                         </div>
                         <button
-                          onClick={() => closeTrade(t.id)}
-                          disabled={closingId === t.id || remaining > 0}
+                          onClick={() => setShowConfirmClose(t.id)}
+                          disabled={closing === t.id}
                           className={cn(
                             "px-3 py-1 rounded-lg text-xs font-medium transition disabled:opacity-50",
-                            remaining > 0
-                              ? "bg-[#A0A0B0]/10 text-[#A0A0B0] cursor-not-allowed"
-                              : "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
+                            "bg-[#FF1744]/15 text-[#FF1744] hover:bg-[#FF1744]/25"
                           )}
                         >
-                          {closingId === t.id ? "..." : remaining > 0 ? formatCountdown(remaining) : "Close"}
+                          {closing === t.id ? (
+                            <div className="w-3 h-3 border-2 border-[#FF1744] border-t-transparent rounded-full animate-spin mx-auto" />
+                          ) : remaining > 0 ? (
+                            formatCountdown(remaining)
+                          ) : (
+                            "Close"
+                          )}
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
                         <span className="text-[#A0A0B0]">Entry: <span className="text-[#F5F5F5]">{t.open_price}</span></span>
-                        <span className={cn(
-                          "text-right font-semibold",
-                          t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]"
-                        )}>
+                        <span className={cn("text-right font-semibold", t.unrealized_pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
                           {t.unrealized_pnl >= 0 ? "+" : ""}${t.unrealized_pnl.toFixed(2)}
                         </span>
-                        <span className="text-[#A0A0B0]">
-                          Lots: <span className="text-[#F5F5F5]">{t.volume}</span>
-                        </span>
-                        <span className={cn(
-                          "text-right font-mono",
-                          remaining > 120000 ? "text-[#A0A0B0]" : remaining > 60000 ? "text-[#D4A843]" : "text-[#FF1744]"
-                        )}>
+                        <span className="text-[#A0A0B0]">Lots: <span className="text-[#F5F5F5]">{t.volume}</span></span>
+                        <span className={cn("text-right font-mono", remaining > 120000 ? "text-[#A0A0B0]" : remaining > 60000 ? "text-[#D4A843]" : "text-[#FF1744]")}>
                           {formatCountdown(remaining)}
                         </span>
-                        <span className="text-[#A0A0B0] text-[10px]">
-                          Age: {t.age_minutes}m / {t.duration}m
-                        </span>
-                        <span className="text-right text-[#A0A0B0]">
-                          {t.bid && t.ask ? `Mkt: ${((t.bid + t.ask) / 2).toFixed(5)}` : ""}
-                        </span>
+                        <span className="text-[#A0A0B0] text-[10px]">Age: {t.age_minutes}m / {t.duration}m</span>
+                        <span className="text-right text-[#A0A0B0]">{t.bid && t.ask ? `Mkt: ${((t.bid + t.ask) / 2).toFixed(5)}` : ""}</span>
                       </div>
                     </div>
                   )
@@ -470,6 +579,115 @@ export default function TradingPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog
+        open={showConfirmOrder}
+        onClose={() => !placing && setShowConfirmOrder(false)}
+        title="Confirm Order"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {[
+              { label: "Action", value: orderType.toUpperCase(), color: orderType === "buy" ? "#00C853" : "#FF1744" },
+              { label: "Instrument", value: selectedInstrument },
+              { label: "Volume", value: `${volume} lots` },
+              { label: "Duration", value: `${tradeDuration} min` },
+              { label: "Price", value: orderType === "buy" ? (price ? price.ask.toFixed(5) : "—") : (price ? price.bid.toFixed(5) : "—") },
+              ...(stopLoss ? [{ label: "Stop Loss", value: stopLoss }] : []),
+              ...(takeProfit ? [{ label: "Take Profit", value: takeProfit }] : []),
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[#0A0B0F]">
+                <span className="text-xs text-[#A0A0B0]">{row.label}</span>
+                <span className="text-sm font-semibold" style={"color" in row ? { color: row.color } : { color: "#F5F5F5" }}>
+                  {row.value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 text-xs text-[#A0A0B0]">
+            By confirming, you agree to execute this trade at the current market price.
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={confirmOrder}
+              disabled={placing}
+              className="flex-1"
+            >
+              {placing ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#0A0B0F] border-t-transparent rounded-full animate-spin" />
+                  Executing...
+                </span>
+              ) : "Confirm Order"}
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setShowConfirmOrder(false)}
+              disabled={placing}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={!!showConfirmClose}
+        onClose={() => !closing && setShowConfirmClose(null)}
+        title="Close Trade"
+      >
+        {showConfirmClose && (() => {
+          const trade = openTrades.find((t) => t.id === showConfirmClose)
+          if (!trade) return null
+          return (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {[
+                  { label: "Instrument", value: trade.symbol },
+                  { label: "Type", value: trade.type.toUpperCase() },
+                  { label: "Entry Price", value: trade.open_price.toFixed(5) },
+                  { label: "Volume", value: `${trade.volume} lots` },
+                  { label: "Unrealized P&L", value: `${trade.unrealized_pnl >= 0 ? "+" : ""}$${trade.unrealized_pnl.toFixed(2)}`, color: trade.unrealized_pnl >= 0 ? "#00C853" : "#FF1744" },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[#0A0B0F]">
+                    <span className="text-xs text-[#A0A0B0]">{row.label}</span>
+                    <span className="text-sm font-semibold" style={"color" in row ? { color: row.color } : { color: "#F5F5F5" }}>
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => confirmClose(showConfirmClose)}
+                  disabled={!!closing}
+                  className="flex-1 bg-gradient-to-r from-[#FF1744] to-[#D50000] text-white"
+                >
+                  {closing ? "Closing..." : "Yes, Close Trade"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => setShowConfirmClose(null)}
+                  disabled={!!closing}
+                  className="flex-1"
+                >
+                  Keep Open
+                </Button>
+              </div>
+            </div>
+          )
+        })()}
+      </Dialog>
     </div>
     </ErrorBoundary>
   )

@@ -16,7 +16,7 @@ export async function GET() {
     .from("copy_trade_subscriptions")
     .select("*, master_trader:master_traders(*)")
     .eq("follower_id", user.id)
-    .eq("status", "active")
+    .in("status", ["active", "paused"])
     .order("created_at", { ascending: false })
 
   if (error) {

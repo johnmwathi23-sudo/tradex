@@ -108,7 +108,9 @@ CREATE TABLE public.copy_trade_subscriptions (
   auto_topup BOOLEAN DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   ended_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(follower_id, master_trader_id)
 );
 
 -- Trades
@@ -126,6 +128,8 @@ CREATE TABLE public.trades (
   take_profit DECIMAL(18,5),
   profit DECIMAL(18,5),
   status TEXT DEFAULT 'open' CHECK (status IN ('open', 'closed', 'pending')),
+  is_ai_generated BOOLEAN DEFAULT FALSE,
+  signal_id UUID,
   opened_at TIMESTAMPTZ DEFAULT NOW(),
   closed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -150,6 +154,21 @@ CREATE POLICY "Users read own mpesa" ON public.mpesa_transactions FOR SELECT USI
 CREATE POLICY "Users read own kyc" ON public.kyc_documents FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own trades" ON public.trades FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own subscriptions" ON public.copy_trade_subscriptions FOR SELECT USING (auth.uid() = follower_id);
+CREATE POLICY "Users insert own subscriptions" ON public.copy_trade_subscriptions FOR INSERT WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "Users update own subscriptions" ON public.copy_trade_subscriptions FOR UPDATE USING (auth.uid() = follower_id);
+CREATE POLICY "Users delete own subscriptions" ON public.copy_trade_subscriptions FOR DELETE USING (auth.uid() = follower_id);
+
+-- Followers can read trades from masters they subscribe to
+CREATE POLICY "Follower read subscribed master trades" ON public.trades FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM copy_trade_subscriptions
+    JOIN master_traders ON master_traders.id = copy_trade_subscriptions.master_trader_id
+    WHERE copy_trade_subscriptions.follower_id = auth.uid()
+    AND master_traders.user_id = trades.user_id
+    AND copy_trade_subscriptions.status IN ('active', 'paused')
+  )
+);
 
 -- Master traders are publicly readable
 CREATE POLICY "Public read master traders" ON public.master_traders FOR SELECT USING (TRUE);

@@ -12,22 +12,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { masterTraderId, allocationPercentage, allocatedAmount } = await request.json()
+  const { masterTraderId, allocationPercentage, allocatedAmount, maxDrawdown, autoTopup } = await request.json()
 
-  if (!masterTraderId || !allocationPercentage) {
+  if (!masterTraderId || allocationPercentage == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+
+  const allocPct = Number(allocationPercentage)
+  if (isNaN(allocPct) || allocPct < 1 || allocPct > 100) {
+    return NextResponse.json({ error: "Allocation percentage must be between 1 and 100" }, { status: 400 })
+  }
+
+  if (allocatedAmount != null && (isNaN(Number(allocatedAmount)) || Number(allocatedAmount) < 0)) {
+    return NextResponse.json({ error: "Invalid allocated amount" }, { status: 400 })
   }
 
   const { data: existing } = await supabase
     .from("copy_trade_subscriptions")
-    .select("id")
+    .select("id, status, allocated_amount, max_drawdown, auto_topup")
     .eq("follower_id", user.id)
     .eq("master_trader_id", masterTraderId)
-    .eq("status", "active")
+    .in("status", ["active", "paused"])
     .maybeSingle()
 
   if (existing) {
-    return NextResponse.json({ error: "Already following this trader" }, { status: 409 })
+    if (existing.status === "active") {
+      return NextResponse.json({ error: "Already following this trader" }, { status: 409 })
+    }
+    const { data: resumed, error: resumeErr } = await supabase
+      .from("copy_trade_subscriptions")
+      .update({
+        status: "active",
+        allocation_percentage: allocPct,
+        allocated_amount: allocatedAmount ?? existing.allocated_amount,
+        max_drawdown: maxDrawdown ?? existing.max_drawdown,
+        auto_topup: autoTopup ?? existing.auto_topup,
+        ended_at: null,
+      })
+      .eq("id", existing.id)
+      .eq("follower_id", user.id)
+      .select("*, master_trader:master_traders(*)")
+      .single()
+
+    if (resumeErr) {
+      return NextResponse.json({ error: resumeErr.message }, { status: 500 })
+    }
+    return NextResponse.json(resumed, { status: 200 })
   }
 
   const { data, error } = await supabase
@@ -35,10 +65,12 @@ export async function POST(request: Request) {
     .insert({
       follower_id: user.id,
       master_trader_id: masterTraderId,
-      allocation_percentage: allocationPercentage,
+      allocation_percentage: allocPct,
       allocated_amount: allocatedAmount ?? 0,
+      max_drawdown: maxDrawdown ?? 20.00,
+      auto_topup: autoTopup ?? false,
     })
-    .select()
+    .select("*, master_trader:master_traders(*)")
     .single()
 
   if (error) {

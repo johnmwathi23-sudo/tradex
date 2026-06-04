@@ -19,6 +19,16 @@
   scrollbar-color: #D4A843 transparent;
 }
 
+html {
+  font-size: 15px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 12px;
+  }
+}
+
 body {
   background: #0A0B0F;
   color: #F5F5F5;
