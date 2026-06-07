@@ -2,7 +2,7 @@ import { InstrumentsGrid } from "@/components/instruments-grid"
 
 export default function InstrumentsPage() {
   return (
-    <div className="pt-32">
+    <div className="pt-16 pb-8 md:pt-32 md:pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-8">
         <h1 className="text-4xl sm:text-5xl font-bold">
           Trading{" "}

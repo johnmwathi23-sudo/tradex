@@ -20,9 +20,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return { error }
   }
   render() {
-    if (this.state.error) {
+      if (this.state.error) {
       return (
-        <div className="flex flex-col items-center justify-center py-20">
+        <div className="flex flex-col items-center justify-center py-10 md:py-20">
           <p className="text-[#A0A0B0] mb-4">Something went wrong loading the terminal</p>
           <Button variant="primary" onClick={() => this.setState({ error: null })}>
             Retry
@@ -337,7 +337,7 @@ export default function TradingPage() {
           <Card className="p-3 sm:p-4">
             <h3 className="text-sm font-semibold text-[#F5F5F5] mb-4">Quick Order</h3>
             {!selectedAccount ? (
-              <div className="text-center py-8">
+              <div className="text-center py-6 md:py-8">
                 <p className="text-sm text-[#A0A0B0]">No trading account connected</p>
                 <a href="/dashboard/mt-accounts" className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20">
                   Connect Account
@@ -503,7 +503,7 @@ export default function TradingPage() {
 
             {showHistory ? (
               closedTrades.length === 0 ? (
-                <p className="text-xs text-[#A0A0B0] text-center py-4">No closed trades</p>
+                <p className="text-xs text-[#A0A0B0] text-center py-3 md:py-4">No closed trades</p>
               ) : (
                 <div className="space-y-2 max-h-[360px] overflow-y-auto">
                   {closedTrades.map((t) => (
@@ -528,7 +528,7 @@ export default function TradingPage() {
                 </div>
               )
             ) : openTrades.length === 0 ? (
-              <p className="text-xs text-[#A0A0B0] text-center py-4">No open positions</p>
+              <p className="text-xs text-[#A0A0B0] text-center py-3 md:py-4">No open positions</p>
             ) : (
               <div className="space-y-2 max-h-[360px] overflow-y-auto">
                 {openTrades.map((t) => {

@@ -4,7 +4,7 @@ import { Mail, MessageCircle, MapPin, Phone } from "lucide-react"
 
 export default function ContactPage() {
   return (
-    <div className="pt-32 pb-24">
+    <div className="pt-20 pb-12 md:pt-32 md:pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl font-bold">

@@ -272,7 +272,7 @@ export default function MtAccountsPage() {
           {showLink && (
             <>
               {linkForm.account_type === "real" && !kycFetched && (
-                <div className="flex justify-center py-4">
+                <div className="flex justify-center py-3 md:py-4">
                   <div className="animate-spin w-5 h-5 border-2 border-[#D4A843] border-t-transparent rounded-full" />
                 </div>
               )}
@@ -319,7 +319,7 @@ export default function MtAccountsPage() {
               )}
 
               {linkForm.account_type === "real" && kycStatus === "submitted" && (
-                <div className="text-center py-6">
+                <div className="text-center py-4 md:py-6">
                   <FileText size={40} className="mx-auto mb-3 text-[#D4A843] opacity-70" />
                   <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Under Review</h3>
                   <p className="text-sm text-[#A0A0B0]">Your Kenyan ID is being reviewed. You'll be able to link a real account once approved.</p>
@@ -386,11 +386,11 @@ export default function MtAccountsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-6 md:py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
         </div>
       ) : accounts.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-8 md:py-16">
           <Terminal size={48} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
           <p className="text-sm text-[#A0A0B0]">No trading accounts linked</p>
           <p className="text-xs text-[#A0A0B0] mt-1">Create a demo account or link an existing account</p>

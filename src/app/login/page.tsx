@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="pt-32 pb-24">
+    <div className="pt-20 pb-12 md:pt-32 md:pb-24">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8">
           <div className="text-center mb-8">

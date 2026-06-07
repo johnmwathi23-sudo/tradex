@@ -58,11 +58,11 @@ export default function TransactionsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-6 md:py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
         </div>
       ) : txs.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-8 md:py-16">
           <Repeat size={40} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
           <p className="text-sm text-[#A0A0B0]">No transactions yet</p>
           <p className="text-xs text-[#A0A0B0] mt-1">Make your first deposit to get started</p>

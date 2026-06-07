@@ -44,7 +44,7 @@ export default function FaqPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <div className="pt-32 pb-24">
+    <div className="pt-20 pb-12 md:pt-32 md:pb-24">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl font-bold">

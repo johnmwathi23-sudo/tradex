@@ -65,7 +65,7 @@ export default function PortfolioPage() {
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-[#F5F5F5]">Open Positions</h3>
         {loading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex justify-center py-6 md:py-8">
             <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
           </div>
         ) : openTrades.length === 0 ? (

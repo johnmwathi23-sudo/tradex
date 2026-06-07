@@ -112,11 +112,11 @@ export default function DashboardPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-[#F5F5F5] mb-4">Copy Trading</h3>
           {loading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-6 md:py-8">
               <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
             </div>
           ) : subscriptions.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-6 md:py-8">
               <Copy size={40} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
               <p className="text-sm text-[#A0A0B0]">You are not following any traders yet</p>
               <Link

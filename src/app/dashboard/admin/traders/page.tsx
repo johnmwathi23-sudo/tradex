@@ -157,7 +157,7 @@ export default function AdminTradersPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-6 md:py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
         </div>
       ) : (
@@ -209,7 +209,7 @@ export default function AdminTradersPage() {
             </Card>
           ))}
           {traders.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-6 md:py-12">
               <TrendingUp size={40} className="mx-auto mb-3 text-[#A0A0B0] opacity-50" />
               <p className="text-sm text-[#A0A0B0]">No master traders registered yet</p>
             </div>

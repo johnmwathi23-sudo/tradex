@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-6 md:py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
         </div>
       ) : (
@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
           })}
 
           {filtered.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-6 md:py-12">
               <p className="text-sm text-[#A0A0B0]">{search ? "No users match your search" : "No users registered yet"}</p>
             </div>
           )}

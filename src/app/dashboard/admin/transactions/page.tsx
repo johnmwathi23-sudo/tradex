@@ -158,7 +158,7 @@ export default function AdminTransactionsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-6 md:py-12">
           <div className="animate-spin w-6 h-6 border-2 border-[#D4A843] border-t-transparent rounded-full" />
         </div>
       ) : tab === "transactions" ? (
@@ -207,7 +207,7 @@ export default function AdminTransactionsPage() {
             </Card>
           ))}
           {filteredTx.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-6 md:py-12">
               <p className="text-sm text-[#A0A0B0]">{search ? "No transactions match your search" : "No transactions found"}</p>
             </div>
           )}
@@ -252,7 +252,7 @@ export default function AdminTransactionsPage() {
             </Card>
           ))}
           {filteredTrades.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-6 md:py-12">
               <p className="text-sm text-[#A0A0B0]">{search ? "No trades match your search" : "No trades placed yet"}</p>
             </div>
           )}
