@@ -8,20 +8,19 @@ export function Hero() {
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <ColorBends
-          colors={["#D4A843", "#8B6F2E", "#3D2E12"]}
+          colors={["#D4A843", "#F5C842", "#5A4A24"]}
           rotation={90}
           speed={0.3}
-          scale={0.8}
-          frequency={0.6}
-          warpStrength={0.8}
+          scale={0.6}
+          frequency={0.5}
+          warpStrength={1}
           mouseInfluence={0.5}
-          noise={0.08}
+          noise={0.06}
           parallax={0.3}
-          iterations={2}
-          intensity={0.8}
-          bandWidth={4}
+          iterations={3}
+          intensity={1.5}
+          bandWidth={8}
           transparent
-          autoRotate={0}
           className="w-full h-full"
         />
       </div>
