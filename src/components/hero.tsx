@@ -1,15 +1,30 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Shield, Zap } from "lucide-react"
+import ColorBends from "./ColorBends"
 
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(212,168,67,0.08) 0%, transparent 40%, transparent 60%, rgba(212,168,67,0.05) 100%)", willChange: "transform" }} />
-      
-      <div className="absolute top-1/4 -left-16 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.15) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat1 18s ease-in-out infinite, orbPulse 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-1/3 -right-16 w-80 h-80 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat2 22s ease-in-out infinite" }} />
-      <div className="absolute top-1/3 left-1/2 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.06) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat1 25s ease-in-out infinite, orbPulse 8s ease-in-out infinite" }} />
+      <div className="absolute inset-0 pointer-events-none">
+        <ColorBends
+          colors={["#ff5c7a", "#8a5cff", "#00ffd1"]}
+          rotation={90}
+          speed={0.2}
+          scale={1}
+          frequency={1}
+          warpStrength={1}
+          mouseInfluence={1}
+          noise={0.15}
+          parallax={0.5}
+          iterations={1}
+          intensity={1.5}
+          bandWidth={6}
+          transparent
+          autoRotate={0}
+          className="w-full h-full"
+        />
+      </div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-3xl">
