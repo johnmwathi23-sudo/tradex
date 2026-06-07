@@ -16,16 +16,16 @@ export function CtaSection() {
             <ColorBends
               colors={["#D4A843", "#5A4A24", "#1A1508"]}
               rotation={45}
-              speed={0.2}
-              scale={1.2}
-              frequency={0.4}
-              warpStrength={0.6}
-              mouseInfluence={0.3}
-              noise={0.03}
-              parallax={0.2}
+              speed={0.15}
+              scale={1.5}
+              frequency={0.3}
+              warpStrength={0.4}
+              mouseInfluence={0.2}
+              noise={0.015}
+              parallax={0.1}
               iterations={1}
-              intensity={0.4}
-              bandWidth={3}
+              intensity={0.15}
+              bandWidth={1.5}
               transparent
               className="w-full h-full"
             />
