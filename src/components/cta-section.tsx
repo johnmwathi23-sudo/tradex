@@ -1,16 +1,34 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import ColorBends from "./ColorBends"
 
 export function CtaSection() {
   return (
     <section className="py-24 relative">
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(212,168,67,0.06) 0%, transparent 100%)" }} />
+      <div className="absolute inset-0 pointer-events-none" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A1D29] to-[#0A0B0F] border border-[#D4A843]/20 p-12 md:p-20 text-center">
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat2 20s ease-in-out infinite" }} />
-          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(212,168,67,0.08) 0%, transparent 70%)", willChange: "transform", animation: "orbFloat1 25s ease-in-out infinite" }} />
+          <div className="absolute inset-0 pointer-events-none">
+            <ColorBends
+              colors={["#D4A843", "#5A4A24", "#1A1508"]}
+              rotation={45}
+              speed={0.2}
+              scale={1.2}
+              frequency={0.4}
+              warpStrength={0.6}
+              mouseInfluence={0.3}
+              noise={0.05}
+              parallax={0.2}
+              iterations={1}
+              intensity={0.6}
+              bandWidth={3}
+              transparent
+              autoRotate={0}
+              className="w-full h-full"
+            />
+          </div>
           
           <div className="relative">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
