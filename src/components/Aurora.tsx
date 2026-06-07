@@ -117,7 +117,7 @@ interface AuroraProps {
 }
 
 export default function Aurora(props: AuroraProps) {
-  const { colorStops = ["#D4A843", "#C9A84C", "#5A4A24"], amplitude = 0.8, blend = 0.4, speed = 0.5 } = props
+  const { colorStops = ["#D4A843", "#C9A84C", "#5A4A24"], amplitude = 1.5, blend = 0.5, speed = 1.0 } = props
   const propsRef = useRef<AuroraProps>(props)
   propsRef.current = props
 
@@ -218,7 +218,7 @@ export default function Aurora(props: AuroraProps) {
     }
   }, [amplitude])
 
-  if (webglFailed) return <div className="w-full h-full" />
+  if (webglFailed) return <div className="w-full h-full bg-red-500" />
 
   return <div ref={ctnDom} className="w-full h-full opacity-50" />
 }
