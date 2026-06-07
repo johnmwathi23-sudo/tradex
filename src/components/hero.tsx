@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Shield, Zap } from "lucide-react"
@@ -15,11 +17,11 @@ export function Hero() {
           frequency={0.5}
           warpStrength={1}
           mouseInfluence={0.5}
-          noise={0.06}
+          noise={0.04}
           parallax={0.3}
           iterations={3}
-          intensity={1.5}
-          bandWidth={8}
+          intensity={0.7}
+          bandWidth={6}
           transparent
           className="w-full h-full"
         />

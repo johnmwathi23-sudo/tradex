@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
@@ -19,13 +21,12 @@ export function CtaSection() {
               frequency={0.4}
               warpStrength={0.6}
               mouseInfluence={0.3}
-              noise={0.05}
+              noise={0.03}
               parallax={0.2}
               iterations={1}
-              intensity={0.6}
+              intensity={0.4}
               bandWidth={3}
               transparent
-              autoRotate={0}
               className="w-full h-full"
             />
           </div>
