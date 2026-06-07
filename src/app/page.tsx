@@ -7,11 +7,13 @@ import { PaymentPartners } from "@/components/payment-partners"
 import { StepSection } from "@/components/step-section"
 import { CtaSection } from "@/components/cta-section"
 import AnimatedContent from "@/components/AnimatedContent"
+import TestEffect from "@/components/TestEffect"
 
 export default function Home() {
   return (
     <>
       <Hero />
+      <TestEffect />
       <AnimatedContent distance={60} duration={0.8} threshold={0.15}>
         <Features />
       </AnimatedContent>
