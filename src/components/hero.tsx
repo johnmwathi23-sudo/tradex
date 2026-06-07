@@ -7,7 +7,7 @@ import ColorBends from "./ColorBends"
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <section className="relative min-h-screen flex items-center pt-16 sm:pt-20 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <ColorBends
           colors={["#D4A843", "#F5C842", "#5A4A24"]}
@@ -27,7 +27,7 @@ export function Hero() {
         />
       </div>
       
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 text-[#D4A843] text-sm font-medium mb-6">
             <Zap size={14} />

@@ -75,12 +75,16 @@ export default function SimulatedChart({
   const currentCandleRef = useRef<CandlestickData | null>(null)
   const initedRef = useRef(false)
 
+  function clearTick() {
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null }
+  }
+
   function initChart(sym: string, price: number) {
     const container = containerRef.current
     if (!container) return
 
+    clearTick()
     if (chartRef.current) {
-      if (tickRef.current) clearInterval(tickRef.current)
       chartRef.current.remove()
       chartRef.current = null
       seriesRef.current = null
@@ -192,6 +196,7 @@ export default function SimulatedChart({
 
     return () => {
       window.removeEventListener("resize", handleResize)
+      clearTick()
     }
   }
 

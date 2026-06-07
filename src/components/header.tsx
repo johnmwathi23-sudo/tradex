@@ -65,7 +65,7 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0B0F]/80 backdrop-blur-xl border-b border-white/5">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0B0F]/80 backdrop-blur-xl border-b border-white/5 will-change-transform">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/" className="flex items-center gap-2">
@@ -135,8 +135,8 @@ export function Header() {
       </div>
 
       <div className={cn(
-        "lg:hidden transition-all duration-300 overflow-hidden",
-        open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        "lg:hidden transition-all duration-300",
+        open ? "max-h-96 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
       )}>
         <div className="px-4 pb-6 pt-2 space-y-3 border-t border-white/5">
           {navLinks.map((link) => (

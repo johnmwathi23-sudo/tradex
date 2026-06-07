@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+let openCount = 0
+
 export function Dialog({
   open,
   onClose,
@@ -21,11 +23,16 @@ export function Dialog({
 
   useEffect(() => {
     if (open) {
+      openCount++
       document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
     }
-    return () => { document.body.style.overflow = "" }
+    return () => {
+      openCount--
+      if (openCount <= 0) {
+        openCount = 0
+        document.body.style.overflow = ""
+      }
+    }
   }, [open])
 
   useEffect(() => {
@@ -41,13 +48,13 @@ export function Dialog({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
     >
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         className={cn(
-          "relative z-10 w-full max-w-md rounded-2xl bg-[#1A1D29] border border-white/10 shadow-2xl p-6 animate-in fade-in zoom-in-95",
+          "relative z-10 w-full max-w-md rounded-2xl bg-[#1A1D29] border border-white/10 shadow-2xl p-6 animate-in",
           className
         )}
       >

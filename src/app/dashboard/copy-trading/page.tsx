@@ -440,7 +440,7 @@ export default function CopyTradingPage() {
           return (
             <Card
               key={trader.id}
-              className="p-5 hover:scale-[1.01] transition-all duration-200 animate-fadeIn"
+              className="p-5 hover:scale-[1.01] transition-transform duration-200 animate-fadeIn will-change-transform"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">

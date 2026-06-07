@@ -7,11 +7,11 @@ import ColorBends from "./ColorBends"
 
 export function CtaSection() {
   return (
-    <section className="py-24 relative">
+    <section className="py-12 md:py-24 relative">
       <div className="absolute inset-0 pointer-events-none" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A1D29] to-[#0A0B0F] border border-[#D4A843]/20 p-12 md:p-20 text-center">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A1D29] to-[#0A0B0F] border border-[#D4A843]/20 p-6 sm:p-12 md:p-20 text-center">
           <div className="absolute inset-0 pointer-events-none">
             <ColorBends
               colors={["#D4A843", "#5A4A24", "#1A1508"]}

@@ -44,7 +44,7 @@ const instruments = [
 
 export function InstrumentsGrid() {
   return (
-    <section className="py-24 bg-[#0A0B0F] relative">
+    <section className="py-12 md:py-24 bg-[#0A0B0F] relative">
       <div className="absolute inset-0 bg-gradient-to-t from-[#D4A843]/[0.02] to-transparent pointer-events-none" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -13,7 +13,7 @@ const partners = [
 
 export function PaymentPartners() {
   return (
-    <section className="py-16">
+    <section className="py-10 md:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <h3 className="text-xl font-semibold text-[#F5F5F5] mb-2">
