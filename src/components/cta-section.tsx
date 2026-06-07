@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import ColorBends from "./ColorBends"
+import Aurora from "./Aurora"
 
 export function CtaSection() {
   return (
@@ -13,21 +13,11 @@ export function CtaSection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A1D29] to-[#0A0B0F] border border-[#D4A843]/20 p-6 sm:p-12 md:p-20 text-center">
           <div className="absolute inset-0 pointer-events-none">
-            <ColorBends
-              colors={["#D4A843", "#C9A84C", "#5A4A24"]}
-              rotation={45}
-              speed={0.2}
-              scale={1.2}
-              frequency={0.35}
-              warpStrength={0.5}
-              mouseInfluence={0.2}
-              noise={0.015}
-              parallax={0.1}
-              iterations={1}
-              intensity={0.3}
-              bandWidth={3}
-              transparent
-              className="w-full h-full"
+            <Aurora
+              colorStops={["#D4A843", "#C9A84C", "#5A4A24"]}
+              amplitude={0.6}
+              blend={0.3}
+              speed={0.4}
             />
           </div>
           

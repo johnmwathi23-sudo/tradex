@@ -3,27 +3,17 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Shield, Zap } from "lucide-react"
-import ColorBends from "./ColorBends"
+import Aurora from "./Aurora"
 
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center pt-16 sm:pt-20 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <ColorBends
-          colors={["#D4A843", "#C9A84C", "#5A4A24"]}
-          rotation={90}
-          speed={0.25}
-          scale={0.7}
-          frequency={0.4}
-          warpStrength={0.6}
-          mouseInfluence={0.3}
-          noise={0.02}
-          parallax={0.2}
-          iterations={2}
-          intensity={0.5}
-          bandWidth={5}
-          transparent
-          className="w-full h-full"
+        <Aurora
+          colorStops={["#D4A843", "#C9A84C", "#5A4A24"]}
+          amplitude={0.8}
+          blend={0.4}
+          speed={0.5}
         />
       </div>
       
