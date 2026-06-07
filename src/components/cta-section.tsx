@@ -14,18 +14,18 @@ export function CtaSection() {
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A1D29] to-[#0A0B0F] border border-[#D4A843]/20 p-6 sm:p-12 md:p-20 text-center">
           <div className="absolute inset-0 pointer-events-none">
             <ColorBends
-              colors={["#D4A843", "#5A4A24", "#1A1508"]}
+              colors={["#D4A843", "#C9A84C", "#5A4A24"]}
               rotation={45}
-              speed={0.15}
-              scale={1.5}
-              frequency={0.3}
-              warpStrength={0.4}
+              speed={0.2}
+              scale={1.2}
+              frequency={0.35}
+              warpStrength={0.5}
               mouseInfluence={0.2}
               noise={0.015}
               parallax={0.1}
               iterations={1}
-              intensity={0.15}
-              bandWidth={1.5}
+              intensity={0.25}
+              bandWidth={2.5}
               transparent
               className="w-full h-full"
             />
