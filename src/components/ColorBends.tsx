@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import * as THREE from "three"
 
 type ColorBendsProps = {
@@ -155,114 +155,125 @@ export default function ColorBends({
   const pointerTargetRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0))
   const pointerCurrentRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0))
   const pointerSmoothRef = useRef<number>(8)
+  const initedRef = useRef(false)
+  const [webglFailed, setWebglFailed] = useState(false)
 
   useEffect(() => {
-    const container = containerRef.current!
-    const scene = new THREE.Scene()
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+    const container = containerRef.current
+    if (!container) return
 
-    const geometry = new THREE.PlaneGeometry(2, 2)
-    const uColorsArray = Array.from({ length: MAX_COLORS }, () => new THREE.Vector3(0, 0, 0))
-    const material = new THREE.ShaderMaterial({
-      vertexShader: vert,
-      fragmentShader: frag,
-      uniforms: {
-        uCanvas: { value: new THREE.Vector2(1, 1) },
-        uTime: { value: 0 },
-        uSpeed: { value: speed },
-        uRot: { value: new THREE.Vector2(1, 0) },
-        uColorCount: { value: 0 },
-        uColors: { value: uColorsArray },
-        uTransparent: { value: transparent ? 1 : 0 },
-        uScale: { value: scale },
-        uFrequency: { value: frequency },
-        uWarpStrength: { value: warpStrength },
-        uPointer: { value: new THREE.Vector2(0, 0) },
-        uMouseInfluence: { value: mouseInfluence },
-        uParallax: { value: parallax },
-        uNoise: { value: noise },
-        uIterations: { value: iterations },
-        uIntensity: { value: intensity },
-        uBandWidth: { value: bandWidth },
-      },
-      premultipliedAlpha: true,
-      transparent: true,
-    })
-    materialRef.current = material
+    try {
+      const scene = new THREE.Scene()
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
-    const mesh = new THREE.Mesh(geometry, material)
-    scene.add(mesh)
+      const geometry = new THREE.PlaneGeometry(2, 2)
+      const uColorsArray = Array.from({ length: MAX_COLORS }, () => new THREE.Vector3(0, 0, 0))
+      const material = new THREE.ShaderMaterial({
+        vertexShader: vert,
+        fragmentShader: frag,
+        uniforms: {
+          uCanvas: { value: new THREE.Vector2(1, 1) },
+          uTime: { value: 0 },
+          uSpeed: { value: speed },
+          uRot: { value: new THREE.Vector2(1, 0) },
+          uColorCount: { value: 0 },
+          uColors: { value: uColorsArray },
+          uTransparent: { value: transparent ? 1 : 0 },
+          uScale: { value: scale },
+          uFrequency: { value: frequency },
+          uWarpStrength: { value: warpStrength },
+          uPointer: { value: new THREE.Vector2(0, 0) },
+          uMouseInfluence: { value: mouseInfluence },
+          uParallax: { value: parallax },
+          uNoise: { value: noise },
+          uIterations: { value: iterations },
+          uIntensity: { value: intensity },
+          uBandWidth: { value: bandWidth },
+        },
+        premultipliedAlpha: true,
+        transparent: true,
+      })
+      materialRef.current = material
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      powerPreference: "high-performance",
-      alpha: true,
-    })
-    rendererRef.current = renderer
-    ;(renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    renderer.setClearColor(0x000000, transparent ? 0 : 1)
-    renderer.domElement.style.width = "100%"
-    renderer.domElement.style.height = "100%"
-    renderer.domElement.style.display = "block"
-    container.appendChild(renderer.domElement)
+      const mesh = new THREE.Mesh(geometry, material)
+      scene.add(mesh)
 
-    const clock = new THREE.Clock()
+      const renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        powerPreference: "high-performance",
+        alpha: true,
+      })
+      rendererRef.current = renderer
+      ;(renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+      renderer.setClearColor(0x000000, transparent ? 0 : 1)
+      renderer.domElement.style.width = "100%"
+      renderer.domElement.style.height = "100%"
+      renderer.domElement.style.display = "block"
+      renderer.domElement.style.pointerEvents = "none"
+      container.appendChild(renderer.domElement)
 
-    const handleResize = () => {
-      const w = container.clientWidth || 1
-      const h = container.clientHeight || 1
-      renderer.setSize(w, h, false)
-      ;(material.uniforms.uCanvas.value as THREE.Vector2).set(w, h)
-    }
+      const clock = new THREE.Clock()
 
-    handleResize()
-
-    if ("ResizeObserver" in window) {
-      const ro = new ResizeObserver(handleResize)
-      ro.observe(container)
-      resizeObserverRef.current = ro
-    } else {
-      ;(window as Window).addEventListener("resize", handleResize)
-    }
-
-    const loop = () => {
-      const dt = clock.getDelta()
-      const elapsed = clock.elapsedTime
-      material.uniforms.uTime.value = elapsed
-
-      const deg = (rotationRef.current % 360) + autoRotateRef.current * elapsed
-      const rad = (deg * Math.PI) / 180
-      const c = Math.cos(rad)
-      const s = Math.sin(rad)
-      ;(material.uniforms.uRot.value as THREE.Vector2).set(c, s)
-
-      const cur = pointerCurrentRef.current
-      const tgt = pointerTargetRef.current
-      const amt = Math.min(1, dt * pointerSmoothRef.current)
-      cur.lerp(tgt, amt)
-      ;(material.uniforms.uPointer.value as THREE.Vector2).copy(cur)
-      renderer.render(scene, camera)
-      rafRef.current = requestAnimationFrame(loop)
-    }
-    rafRef.current = requestAnimationFrame(loop)
-
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      if (resizeObserverRef.current) resizeObserverRef.current.disconnect()
-      else (window as Window).removeEventListener("resize", handleResize)
-      geometry.dispose()
-      material.dispose()
-      renderer.dispose()
-      renderer.forceContextLoss()
-      if (renderer.domElement && renderer.domElement.parentElement === container) {
-        container.removeChild(renderer.domElement)
+      const handleResize = () => {
+        const w = container.clientWidth || 1
+        const h = container.clientHeight || 1
+        renderer.setSize(w, h, false)
+        ;(material.uniforms.uCanvas.value as THREE.Vector2).set(w, h)
       }
+
+      handleResize()
+
+      if ("ResizeObserver" in window) {
+        const ro = new ResizeObserver(handleResize)
+        ro.observe(container)
+        resizeObserverRef.current = ro
+      } else {
+        ;(window as Window).addEventListener("resize", handleResize)
+      }
+
+      const loop = () => {
+        const dt = clock.getDelta()
+        const elapsed = clock.elapsedTime
+        material.uniforms.uTime.value = elapsed
+
+        const deg = (rotationRef.current % 360) + autoRotateRef.current * elapsed
+        const rad = (deg * Math.PI) / 180
+        const c = Math.cos(rad)
+        const s = Math.sin(rad)
+        ;(material.uniforms.uRot.value as THREE.Vector2).set(c, s)
+
+        const cur = pointerCurrentRef.current
+        const tgt = pointerTargetRef.current
+        const amt = Math.min(1, dt * pointerSmoothRef.current)
+        cur.lerp(tgt, amt)
+        ;(material.uniforms.uPointer.value as THREE.Vector2).copy(cur)
+        renderer.render(scene, camera)
+        rafRef.current = requestAnimationFrame(loop)
+      }
+      rafRef.current = requestAnimationFrame(loop)
+      initedRef.current = true
+
+      return () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+        if (resizeObserverRef.current) resizeObserverRef.current.disconnect()
+        else (window as Window).removeEventListener("resize", handleResize)
+        geometry.dispose()
+        material.dispose()
+        renderer.dispose()
+        renderer.forceContextLoss()
+        if (renderer.domElement && renderer.domElement.parentElement === container) {
+          container.removeChild(renderer.domElement)
+        }
+      }
+    } catch {
+      setWebglFailed(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
+    if (webglFailed || !initedRef.current) return
     const material = materialRef.current
     const renderer = rendererRef.current
     if (!material) return
@@ -325,6 +336,7 @@ export default function ColorBends({
   ])
 
   useEffect(() => {
+    if (webglFailed || !initedRef.current) return
     const material = materialRef.current
     const container = containerRef.current
     if (!material || !container) return
@@ -340,9 +352,9 @@ export default function ColorBends({
     return () => {
       container.removeEventListener("pointermove", handlePointerMove)
     }
-  }, [])
+  }, [webglFailed])
 
-  return (
+  return webglFailed ? null : (
     <div
       ref={containerRef}
       className={`w-full h-full relative overflow-hidden ${className || ""}`}

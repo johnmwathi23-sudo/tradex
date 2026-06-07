@@ -20,8 +20,8 @@ export function Hero() {
           noise={0.02}
           parallax={0.2}
           iterations={2}
-          intensity={0.4}
-          bandWidth={4}
+          intensity={0.5}
+          bandWidth={5}
           transparent
           className="w-full h-full"
         />

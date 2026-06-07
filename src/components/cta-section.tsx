@@ -24,8 +24,8 @@ export function CtaSection() {
               noise={0.015}
               parallax={0.1}
               iterations={1}
-              intensity={0.25}
-              bandWidth={2.5}
+              intensity={0.3}
+              bandWidth={3}
               transparent
               className="w-full h-full"
             />
