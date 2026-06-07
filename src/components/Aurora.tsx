@@ -122,89 +122,103 @@ export default function Aurora(props: AuroraProps) {
   propsRef.current = props
 
   const ctnDom = useRef<HTMLDivElement>(null)
+  const [webglFailed, setWebglFailed] = useState(false)
 
   useEffect(() => {
     const ctn = ctnDom.current
     if (!ctn) return
 
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: true,
-    })
-    const gl = renderer.gl
-    gl.clearColor(0, 0, 0, 0)
-    gl.enable(gl.BLEND)
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-    gl.canvas.style.backgroundColor = "transparent"
-
+    let renderer: Renderer
+    let gl: any
     let program: Program | undefined
-
-    function resize() {
-      if (!ctn) return
-      const width = ctn.offsetWidth
-      const height = ctn.offsetHeight
-      renderer.setSize(width, height)
-      if (program) {
-        program.uniforms.uResolution.value = [width, height]
-      }
-    }
-    window.addEventListener("resize", resize)
-
-    const geometry = new Triangle(gl)
-    if (geometry.attributes.uv) {
-      delete geometry.attributes.uv
-    }
-
-    const colorStopsArray = colorStops.map((hex) => {
-      const c = new Color(hex)
-      return [c.r, c.g, c.b]
-    })
-
-    program = new Program(gl, {
-      vertex: VERT,
-      fragment: FRAG,
-      uniforms: {
-        uTime: { value: 0 },
-        uAmplitude: { value: amplitude },
-        uColorStops: { value: colorStopsArray },
-        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
-        uBlend: { value: blend },
-      },
-    })
-
-    const mesh = new Mesh(gl, { geometry, program })
-    ctn.appendChild(gl.canvas)
-
+    let geometry: Triangle
+    let mesh: Mesh
     let animateId = 0
-    const update = (t: number) => {
-      animateId = requestAnimationFrame(update)
-      if (program) {
-        const spd = propsRef.current.speed ?? speed
-        program.uniforms.uTime.value = t * 0.01 * spd * 0.1
-        program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? amplitude
-        program.uniforms.uBlend.value = propsRef.current.blend ?? blend
-        const stops = propsRef.current.colorStops ?? colorStops
-        program.uniforms.uColorStops.value = stops.map((hex: string) => {
-          const c = new Color(hex)
-          return [c.r, c.g, c.b]
-        })
-        renderer.render({ scene: mesh })
-      }
-    }
-    animateId = requestAnimationFrame(update)
+    let resizeHandler: (() => void) | null = null
 
-    resize()
+    try {
+      renderer = new Renderer({
+        alpha: true,
+        premultipliedAlpha: true,
+        antialias: true,
+      })
+      gl = renderer.gl as unknown as WebGLRenderingContext
+      gl.clearColor(0, 0, 0, 0)
+      gl.enable(gl.BLEND)
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+      ;(gl.canvas as HTMLCanvasElement).style.backgroundColor = "transparent"
+
+      const resize = () => {
+        if (!ctn) return
+        const width = ctn.offsetWidth
+        const height = ctn.offsetHeight
+        renderer.setSize(width, height)
+        if (program) {
+          program.uniforms.uResolution.value = [width, height]
+        }
+      }
+      window.addEventListener("resize", resize)
+      resizeHandler = resize
+
+      geometry = new Triangle(gl)
+      if (geometry.attributes.uv) {
+        delete geometry.attributes.uv
+      }
+
+      const colorStopsArray = colorStops.map((hex) => {
+        const c = new Color(hex)
+        return [c.r, c.g, c.b]
+      })
+
+      program = new Program(gl, {
+        vertex: VERT,
+        fragment: FRAG,
+        uniforms: {
+          uTime: { value: 0 },
+          uAmplitude: { value: amplitude },
+          uColorStops: { value: colorStopsArray },
+          uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
+          uBlend: { value: blend },
+        },
+      })
+
+      mesh = new Mesh(gl, { geometry, program })
+      ctn.appendChild(gl.canvas as HTMLCanvasElement)
+
+      const update = (t: number) => {
+        animateId = requestAnimationFrame(update)
+        if (program) {
+          const spd = propsRef.current.speed ?? speed
+          program.uniforms.uTime.value = t * 0.01 * spd * 0.1
+          program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? amplitude
+          program.uniforms.uBlend.value = propsRef.current.blend ?? blend
+          const stops = propsRef.current.colorStops ?? colorStops
+          program.uniforms.uColorStops.value = stops.map((hex: string) => {
+            const c = new Color(hex)
+            return [c.r, c.g, c.b]
+          })
+          renderer.render({ scene: mesh })
+        }
+      }
+      animateId = requestAnimationFrame(update)
+
+      resize()
+    } catch {
+      setWebglFailed(true)
+      return
+    }
 
     return () => {
       cancelAnimationFrame(animateId)
-      window.removeEventListener("resize", resize)
-      if (ctn && gl.canvas.parentNode === ctn) {
+      if (resizeHandler) window.removeEventListener("resize", resizeHandler)
+      if (gl && ctn && (gl.canvas as HTMLCanvasElement).parentNode === ctn) {
         ctn.removeChild(gl.canvas)
       }
-      gl.getExtension("WEBGL_lose_context")?.loseContext()
+      gl?.getExtension("WEBGL_lose_context")?.loseContext()
     }
   }, [amplitude])
+
+  if (webglFailed) return <div className="w-full h-full" />
 
   return <div ref={ctnDom} className="w-full h-full opacity-50" />
 }
