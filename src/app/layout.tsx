@@ -5,6 +5,8 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ToastProvider } from "@/components/ui/toast"
+import ThreeProvider from "@/components/ThreeProvider"
+import LoadingScreen from "@/components/LoadingScreen"
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,13 +40,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen bg-[#0A0B0F] text-[#F5F5F5] font-sans antialiased flex flex-col">
-        <AuthProvider>
-          <ToastProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </ToastProvider>
-        </AuthProvider>
+        <LoadingScreen />
+        <ThreeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <Header />
+              <main className="flex-1 relative z-10">{children}</main>
+              <Footer />
+            </ToastProvider>
+          </AuthProvider>
+        </ThreeProvider>
       </body>
     </html>
   )

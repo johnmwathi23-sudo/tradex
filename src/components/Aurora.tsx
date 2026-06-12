@@ -146,7 +146,7 @@ export default function Aurora(props: AuroraProps) {
       gl.clearColor(0, 0, 0, 0)
       gl.enable(gl.BLEND)
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-      ;(gl.canvas as HTMLCanvasElement).style.backgroundColor = "transparent"
+      if (gl.canvas) (gl.canvas as HTMLCanvasElement).style.backgroundColor = "transparent"
 
       const resize = () => {
         if (!ctn) return
@@ -183,7 +183,7 @@ export default function Aurora(props: AuroraProps) {
       })
 
       mesh = new Mesh(gl, { geometry, program })
-      ctn.appendChild(gl.canvas as HTMLCanvasElement)
+      if (gl.canvas) ctn.appendChild(gl.canvas as HTMLCanvasElement)
 
       const update = (t: number) => {
         animateId = requestAnimationFrame(update)
@@ -203,7 +203,8 @@ export default function Aurora(props: AuroraProps) {
       animateId = requestAnimationFrame(update)
 
       resize()
-    } catch {
+    } catch (error) {
+      console.error('Aurora failed:', error)
       setWebglFailed(true)
       return
     }
@@ -218,7 +219,7 @@ export default function Aurora(props: AuroraProps) {
     }
   }, [amplitude])
 
-  if (webglFailed) return <div className="w-full h-full bg-red-500" />
+  if (webglFailed) return <div className="w-full h-full" />
 
   return <div ref={ctnDom} className="w-full h-full opacity-50" />
 }

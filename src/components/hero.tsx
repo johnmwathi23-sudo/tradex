@@ -3,23 +3,16 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Shield, Zap } from "lucide-react"
-import Aurora from "./Aurora"
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center pt-0 sm:pt-20 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <Aurora
-          colorStops={["#D4A843", "#C9A84C", "#5A4A24"]}
-          amplitude={0.8}
-          blend={0.4}
-          speed={0.5}
-        />
-      </div>
-      
+    <section
+      className="relative min-h-screen flex items-center pt-0 sm:pt-20 overflow-hidden glass-section-hero"
+      data-scroll-section
+    >
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-20">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 text-[#D4A843] text-sm font-medium mb-3 sm:mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 text-[#D4A843] text-sm font-medium mb-3 sm:mb-6 backdrop-blur-sm">
             <Zap size={14} />
             Trusted by 50,000+ traders worldwide
           </div>
