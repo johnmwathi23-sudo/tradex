@@ -1,8 +1,19 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let client: SupabaseClient | null = null
 
-export { supabaseAdmin }
+function getAdminClient(): SupabaseClient {
+  if (!client) {
+    client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return client
+}
+
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return getAdminClient()[prop as keyof SupabaseClient]
+  },
+})
