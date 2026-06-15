@@ -3,13 +3,13 @@
 @theme inline {
   --color-background: #0A0B0F;
   --color-foreground: #F5F5F5;
-  --color-tradex-dark: #0A0B0F;
-  --color-tradex-card: #1A1D29;
-  --color-tradex-gold: #D4A843;
-  --color-tradex-gold2: #E5C05A;
-  --color-tradex-muted: #A0A0B0;
-  --color-tradex-green: #00C853;
-  --color-tradex-red: #FF1744;
+  --color-prime-dark: #0A0B0F;
+  --color-prime-card: #1A1D29;
+  --color-prime-gold: #D4A843;
+  --color-prime-gold2: #E5C05A;
+  --color-prime-muted: #A0A0B0;
+  --color-prime-green: #00C853;
+  --color-prime-red: #FF1744;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Playfair Display", ui-serif, Georgia, serif;
 }

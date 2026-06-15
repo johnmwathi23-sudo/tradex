@@ -70,8 +70,8 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/images/tradex-logo.svg"
-              alt="TradeX"
+              src="/images/primestone-logo.svg"
+              alt="Primestone Markets"
               width={100}
               height={28}
               className="h-7 w-auto"

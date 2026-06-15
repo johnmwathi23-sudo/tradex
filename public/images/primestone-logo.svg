@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 40" fill="none">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A843"/>
+      <stop offset="100%" stop-color="#E5C05A"/>
+    </linearGradient>
+  </defs>
+  <text x="0" y="30" font-family="'Playfair Display', Georgia, serif" font-size="26" font-weight="700" fill="#F5F5F5" letter-spacing="1">PRIMESTONE</text>
+  <text x="185" y="30" font-family="'Playfair Display', Georgia, serif" font-size="26" font-weight="700" fill="url(#goldGrad)" letter-spacing="1">MARKETS</text>
+</svg>

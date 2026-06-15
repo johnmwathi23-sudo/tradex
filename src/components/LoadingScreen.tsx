@@ -16,8 +16,8 @@ export default function LoadingScreen() {
       <div className="flex flex-col items-center gap-6">
         <div className="loading-logo">
           <Image
-            src="/images/tradex-logo.svg"
-            alt="TradeX"
+            src="/images/primestone-logo.svg"
+            alt="Primestone Markets"
             width={160}
             height={45}
             className="h-12 w-auto"

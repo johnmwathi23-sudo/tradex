@@ -35,8 +35,8 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-1">
             <Image
-              src="/images/tradex-logo.svg"
-              alt="TradeX"
+              src="/images/primestone-logo.svg"
+              alt="Primestone Markets"
               width={120}
               height={30}
               className="h-7 w-auto mb-4"
@@ -70,7 +70,7 @@ export function Footer() {
             Risk Warning: Trading Forex and CFDs carries a high level of risk to your capital and may result in losing more than your initial deposit. It may not be suitable for all investors. Please ensure you fully understand the risks involved.
           </p>
           <p className="text-xs text-[#A0A0B0]/40 text-center mt-4">
-            &copy; {new Date().getFullYear()} TradeX. All rights reserved.
+            &copy; {new Date().getFullYear()} Primestone Markets. All rights reserved.
           </p>
         </div>
       </div>

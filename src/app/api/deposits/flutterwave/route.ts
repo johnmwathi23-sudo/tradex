@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid amount (min $10)" }, { status: 400 })
   }
 
-  const txRef = `TRADEX_FLW_${Date.now()}_${user.id.slice(0, 8)}`
+  const txRef = `PRIMESTONE_FLW_${Date.now()}_${user.id.slice(0, 8)}`
 
   const { data: tx } = await supabase
     .from("transactions")

@@ -19,10 +19,10 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "TradeX - Copy the Best Traders In The Market",
+  title: "Primestone Markets - Copy the Best Traders In The Market",
   description:
-    "TradeX is a premier forex and copy trading platform. Copy professional traders, access elite market conditions, and trade global markets with zero commission.",
-  keywords: "forex trading, copy trading, CFD trading, online trading, TradeX",
+    "Primestone Markets is a premier forex and copy trading platform. Copy professional traders, access elite market conditions, and trade global markets with zero commission.",
+  keywords: "forex trading, copy trading, CFD trading, online trading, Primestone Markets",
 }
 
 export const viewport: Viewport = {

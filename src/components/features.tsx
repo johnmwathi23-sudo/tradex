@@ -60,7 +60,7 @@ export function Features() {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
             Why Choose{" "}
             <span className="bg-gradient-to-r from-[#D4A843] to-[#E5C05A] bg-clip-text text-transparent">
-              TradeX
+              Primestone Markets
             </span>
             ?
           </h2>

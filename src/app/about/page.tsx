@@ -6,7 +6,7 @@ export default function AboutPage() {
           <h1 className="text-4xl sm:text-5xl font-bold">
             About{" "}
             <span className="bg-gradient-to-r from-[#D4A843] to-[#E5C05A] bg-clip-text text-transparent">
-              TradeX
+              Primestone Markets
             </span>
           </h1>
           <p className="mt-4 text-lg text-[#A0A0B0]">
@@ -18,7 +18,7 @@ export default function AboutPage() {
           <div>
             <h2 className="text-2xl font-bold text-[#F5F5F5] mb-4">Our Mission</h2>
             <p className="text-[#A0A0B0] leading-relaxed mb-6">
-              TradeX was built to democratize access to global financial markets. We believe that every trader,
+              Primestone Markets was built to democratize access to global financial markets. We believe that every trader,
               regardless of location or capital, deserves institutional-grade trading conditions, transparent
               pricing, and the ability to copy proven successful strategies.
             </p>

@@ -50,8 +50,8 @@ export async function POST(req: Request) {
           PartyB: MPESA_SHORTCODE,
           PhoneNumber: phone.replace(/\D/g, ""),
           CallBackURL: `${MPESA_CALLBACK_URL}/api/deposits/mpesa/callback`,
-          AccountReference: `TRADEX_${user.id.slice(0, 8)}`,
-          TransactionDesc: "TradeX Deposit",
+          AccountReference: `PRIMESTONE_${user.id.slice(0, 8)}`,
+          TransactionDesc: "Primestone Markets Deposit",
         }),
       }
     )

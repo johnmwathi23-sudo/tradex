@@ -1,4 +1,4 @@
--- TradeX Database Schema for Supabase
+-- Primestone Markets Database Schema for Supabase
 
 -- Users table (extends Supabase Auth)
 CREATE TABLE public.profiles (

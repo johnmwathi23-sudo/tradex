@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 const bankDetails = {
   bankName: "NCBA Bank Kenya",
-  accountName: "TradeX Global Ltd",
+  accountName: "Primestone Global Ltd",
   accountNumber: "1234567890",
   branch: "Upper Hill Branch, Nairobi",
   swiftCode: "CBAFKENX",

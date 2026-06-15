@@ -38,7 +38,7 @@ export default function LoginPage() {
         <Card className="p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-[#F5F5F5]">Welcome Back</h1>
-            <p className="text-sm text-[#A0A0B0] mt-2">Log in to your TradeX account</p>
+            <p className="text-sm text-[#A0A0B0] mt-2">Log in to your Primestone Markets account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils"
 
 const faqs = [
   {
-    q: "What is TradeX?",
-    a: "TradeX is a premier forex and copy trading platform that allows you to trade global financial markets or automatically copy the strategies of professional traders. We offer competitive spreads, high leverage, and a seamless trading experience.",
+    q: "What is Primestone Markets?",
+    a: "Primestone Markets is a premier forex and copy trading platform that allows you to trade global financial markets or automatically copy the strategies of professional traders. We offer competitive spreads, high leverage, and a seamless trading experience.",
   },
   {
     q: "How does copy trading work?",
@@ -23,12 +23,12 @@ const faqs = [
     a: "Simply log in to your dashboard, click 'Deposit', select M-Pesa as your payment method, enter the amount and your M-Pesa phone number. You will receive an STK push on your phone to confirm the payment. Funds are credited instantly upon confirmation.",
   },
   {
-    q: "Is TradeX regulated?",
-    a: "TradeX operates in full compliance with international financial regulations. We maintain segregated client accounts to ensure the safety of your funds. Please refer to our legal documentation for detailed regulatory information.",
+    q: "Is Primestone Markets regulated?",
+    a: "Primestone Markets operates in full compliance with international financial regulations. We maintain segregated client accounts to ensure the safety of your funds. Please refer to our legal documentation for detailed regulatory information.",
   },
   {
     q: "What trading platforms do you support?",
-    a: "TradeX is available on web, mobile, and desktop. Our proprietary WebTrader is accessible directly from your browser with advanced charting tools, one-click trading, and real-time market data.",
+    a: "Primestone Markets is available on web, mobile, and desktop. Our proprietary WebTrader is accessible directly from your browser with advanced charting tools, one-click trading, and real-time market data.",
   },
   {
     q: "How long do withdrawals take?",
@@ -54,7 +54,7 @@ export default function FaqPage() {
             </span>
           </h1>
           <p className="mt-4 text-lg text-[#A0A0B0]">
-            Everything you need to know about trading with TradeX
+            Everything you need to know about trading with Primestone Markets
           </p>
         </div>
 

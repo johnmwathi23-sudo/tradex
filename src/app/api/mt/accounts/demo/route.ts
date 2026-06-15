@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 const demoAccounts: Record<string, { server: string; broker: string }> = {
-  mt4: { server: "TradeX-Demo", broker: "TradeX Global Markets" },
-  mt5: { server: "TradeX-Demo5", broker: "TradeX Global Markets" },
+  mt4: { server: "Primestone-Demo", broker: "Primestone Global Markets" },
+  mt5: { server: "Primestone-Demo5", broker: "Primestone Global Markets" },
 }
 
 export async function POST(req: Request) {

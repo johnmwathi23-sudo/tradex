@@ -21,7 +21,7 @@ export default function ContactPage() {
         <div className="mt-16 grid md:grid-cols-2 gap-8">
           <div className="space-y-6">
             {[
-              { icon: Mail, title: "Email", value: "support@tradex.com" },
+              { icon: Mail, title: "Email", value: "support@primestone.com" },
               { icon: MessageCircle, title: "Live Chat", value: "Available 24/7" },
               { icon: Phone, title: "Phone", value: "+1 (555) 123-4567" },
               { icon: MapPin, title: "Office", value: "Global Operations" },

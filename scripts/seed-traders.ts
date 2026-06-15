@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 const traders = [
   {
-    email: "masterfx@tradex.com",
+    email: "masterfx@primestone.com",
     password: "MasterFX123!",
     displayName: "Master FX",
     firstName: "Master",
@@ -30,7 +30,7 @@ const traders = [
     minInvestment: 50.0,
   },
   {
-    email: "flossin@tradex.com",
+    email: "flossin@primestone.com",
     password: "Flossin123!",
     displayName: "Flossin",
     firstName: "Flossin",
