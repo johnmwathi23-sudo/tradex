@@ -72,7 +72,7 @@ export function Header() {
             <Image
               src="/images/primestone-logo.svg"
               alt="Primestone Markets"
-              width={100}
+              width={28}
               height={28}
               className="h-7 w-auto"
               priority

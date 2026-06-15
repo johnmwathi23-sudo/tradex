@@ -37,8 +37,8 @@ export function Footer() {
             <Image
               src="/images/primestone-logo.svg"
               alt="Primestone Markets"
-              width={120}
-              height={30}
+              width={28}
+              height={28}
               className="h-7 w-auto mb-4"
             />
             <p className="text-sm text-[#A0A0B0] leading-relaxed">

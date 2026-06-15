@@ -18,8 +18,8 @@ export default function LoadingScreen() {
           <Image
             src="/images/primestone-logo.svg"
             alt="Primestone Markets"
-            width={160}
-            height={45}
+            width={48}
+            height={48}
             className="h-12 w-auto"
             priority
           />
