@@ -26,7 +26,7 @@ export async function processConversionJobs() {
       payments!inner (id)
     `)
     .eq("status", "queued")
-    .lt("retry_count", supabaseAdmin.rpc("get_column", { table: "conversion_jobs", column: "max_retries" }))
+    .lt("retry_count", 3)
     .limit(5)
 
   if (error || !jobs?.length) return { processed: 0 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe/client"
 import { constructEvent } from "@/lib/stripe/webhook"
 import { supabaseAdmin } from "@/lib/supabase/admin"
+import { processConversionJobs } from "@/lib/crypto/conversion-worker"
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -80,6 +81,10 @@ export async function POST(req: Request) {
         status_to: "stripe_confirmed",
         metadata: { stripe_event_id: event.id, amount_usd: amountUsd },
       })
+
+      processConversionJobs().catch((err) =>
+        console.error("Background conversion failed:", err)
+      )
 
       break
     }
