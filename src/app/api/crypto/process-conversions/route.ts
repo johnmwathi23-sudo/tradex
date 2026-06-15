@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { processConversionJobs } from "@/lib/crypto/conversion-worker"
+import { processConversionJobs } from "../../../lib/crypto/conversion-worker"
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization")

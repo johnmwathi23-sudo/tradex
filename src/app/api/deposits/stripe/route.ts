@@ -1,5 +1,5 @@
-import { stripe } from "@/lib/stripe/client"
-import { createClient } from "@/lib/supabase/server"
+import { stripe } from "../../../../lib/stripe/client"
+import { createClient } from "../../../../lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {

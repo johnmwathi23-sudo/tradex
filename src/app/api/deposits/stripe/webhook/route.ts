@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { stripe } from "@/lib/stripe/client"
-import { constructEvent } from "@/lib/stripe/webhook"
-import { supabaseAdmin } from "@/lib/supabase/admin"
-import { processConversionJobs } from "@/lib/crypto/conversion-worker"
+import { stripe } from "../../../../../lib/stripe/client"
+import { constructEvent } from "../../../../../lib/stripe/webhook"
+import { supabaseAdmin } from "../../../../../lib/supabase/admin"
+import { processConversionJobs } from "../../../../../lib/crypto/conversion-worker"
 
 export async function POST(req: Request) {
   const body = await req.text()
