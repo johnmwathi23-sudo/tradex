@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   description:
     "Primestone Markets is a premier forex and copy trading platform. Copy professional traders, access elite market conditions, and trade global markets with zero commission.",
   keywords: "forex trading, copy trading, CFD trading, online trading, Primestone Markets",
+  icons: {
+    icon: "/images/primestone-logo.svg",
+    apple: "/images/primestone-logo.svg",
+  },
 }
 
 export const viewport: Viewport = {
