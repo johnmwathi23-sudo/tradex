@@ -2,66 +2,82 @@
 
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Smartphone, CreditCard, Bitcoin, Building2, Copy, Check } from "lucide-react"
+import { CreditCard, Loader2, CheckCircle } from "lucide-react"
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
+import { loadStripe } from "@stripe/stripe-js"
 
-const methods = [
-  { id: "mpesa", label: "M-Pesa", icon: Smartphone, desc: "Deposit via M-Pesa STK Push" },
-  { id: "flutterwave", label: "Card / Mobile Money", icon: CreditCard, desc: "Visa, Mastercard, Airtel Money" },
-  { id: "crypto", label: "Crypto", icon: Bitcoin, desc: "USDT (TRC20/ERC20), BTC" },
-  { id: "bank", label: "Bank Transfer", icon: Building2, desc: "Wire transfer (USD)" },
-]
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-const cryptoAssets = [
-  { id: "USDT_TRC20", label: "USDT (TRC20)", network: "Tron" },
-  { id: "USDT_ERC20", label: "USDT (ERC20)", network: "Ethereum" },
-  { id: "BTC", label: "Bitcoin", network: "BTC" },
-]
-
-export default function DepositPage() {
-  const [method, setMethod] = useState("mpesa")
-  const [amount, setAmount] = useState("")
-  const [phone, setPhone] = useState("")
-  const [asset, setAsset] = useState("USDT_TRC20")
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+function CheckoutForm({ amount, onSuccess }: { amount: number; onSuccess: () => void }) {
+  const stripe = useStripe()
+  const elements = useElements()
   const [error, setError] = useState("")
-  const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!stripe || !elements) return
     setLoading(true)
     setError("")
-    setResult(null)
+
+    const { error: submitError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/dashboard/deposit`,
+      },
+      redirect: "if_required",
+    })
+
+    if (submitError) {
+      setError(submitError.message || "Payment failed")
+      setLoading(false)
+    } else {
+      onSuccess()
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      {error && (
+        <div className="p-3 rounded-xl bg-[#FF1744]/10 border border-[#FF1744]/20 text-sm text-[#FF1744]">
+          {error}
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={!stripe || loading}
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {loading && <Loader2 size={16} className="animate-spin" />}
+        Pay ${amount.toFixed(2)}
+      </button>
+    </form>
+  )
+}
+
+export default function DepositPage() {
+  const [amount, setAmount] = useState("")
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+
+  async function handleInitPayment(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
 
     try {
-      const body: any = { amount: parseFloat(amount) }
-      let endpoint = ""
-
-      switch (method) {
-        case "mpesa":
-          body.phone = phone
-          endpoint = "/api/deposits/mpesa"
-          break
-        case "flutterwave":
-          endpoint = "/api/deposits/flutterwave"
-          break
-        case "crypto":
-          body.asset = asset
-          endpoint = "/api/deposits/crypto"
-          break
-        case "bank":
-          endpoint = "/api/deposits/bank"
-          break
-      }
-
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/deposits/stripe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ amount: parseFloat(amount) }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setResult(data)
+      setClientSecret(data.clientSecret)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -69,44 +85,52 @@ export default function DepositPage() {
     }
   }
 
-  async function copyAddress(text: string) {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  if (success) {
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-[#F5F5F5]">Deposit</h1>
+        </div>
+        <Card className="p-6 max-w-xl">
+          <div className="text-center space-y-4">
+            <CheckCircle size={48} className="text-[#00C853] mx-auto" />
+            <div className="text-lg font-bold text-[#00C853]">Payment Successful</div>
+            <p className="text-sm text-[#A0A0B0]">
+              Your deposit of ${parseFloat(amount).toFixed(2)} has been confirmed.
+              Your account has been credited and the USDT conversion is being processed.
+            </p>
+            <button
+              onClick={() => { setSuccess(false); setAmount(""); setClientSecret(null) }}
+              className="w-full py-3 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10 transition"
+            >
+              Make Another Deposit
+            </button>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#F5F5F5]">Deposit</h1>
-        <p className="text-sm text-[#A0A0B0] mt-1">Choose your preferred deposit method</p>
+        <p className="text-sm text-[#A0A0B0] mt-1">Fund your account via card payment</p>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        {methods.map((m) => {
-          const Icon = m.icon
-          const selected = method === m.id
-          return (
-            <button
-              key={m.id}
-              onClick={() => { setMethod(m.id); setResult(null); setError("") }}
-              className={`p-4 rounded-xl border text-left transition-all ${
-                selected
-                  ? "bg-[#D4A843]/10 border-[#D4A843]/40 text-[#D4A843]"
-                  : "bg-[#1A1D29]/50 border-white/5 text-[#A0A0B0] hover:border-white/20"
-              }`}
-            >
-              <Icon size={22} className="mb-2" />
-              <div className="text-sm font-semibold text-[#F5F5F5]">{m.label}</div>
-              <div className="text-xs mt-0.5">{m.desc}</div>
-            </button>
-          )
-        })}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 w-fit">
+          <CreditCard size={22} className="text-[#D4A843]" />
+          <div>
+            <div className="text-sm font-semibold text-[#F5F5F5]">Card Payment</div>
+            <div className="text-xs text-[#A0A0B0]">Visa, Mastercard, AMEX</div>
+          </div>
+        </div>
       </div>
 
       <Card className="p-6 max-w-xl">
-        {!result ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {!clientSecret ? (
+          <form onSubmit={handleInitPayment} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Amount (USD)</label>
               <input
@@ -121,36 +145,6 @@ export default function DepositPage() {
               />
             </div>
 
-            {method === "mpesa" && (
-              <div>
-                <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">M-Pesa Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 254712345678"
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
-                  required
-                />
-                <p className="text-xs text-[#A0A0B0] mt-1">Enter phone number with country code (254...)</p>
-              </div>
-            )}
-
-            {method === "crypto" && (
-              <div>
-                <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Asset</label>
-                <select
-                  value={asset}
-                  onChange={(e) => setAsset(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
-                >
-                  {cryptoAssets.map((a) => (
-                    <option key={a.id} value={a.id}>{a.label} ({a.network})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {error && (
               <div className="p-3 rounded-xl bg-[#FF1744]/10 border border-[#FF1744]/20 text-sm text-[#FF1744]">
                 {error}
@@ -160,50 +154,16 @@ export default function DepositPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? "Processing..." : `Deposit $${parseFloat(amount) || 0}`}
+              {loading && <Loader2 size={16} className="animate-spin" />}
+              Continue to Payment
             </button>
           </form>
         ) : (
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-[#00C853]/10 border border-[#00C853]/20 text-center">
-              <div className="text-lg font-bold text-[#00C853] mb-1">Deposit Initiated</div>
-              <p className="text-sm text-[#A0A0B0]">{result.message || result.instructions}</p>
-            </div>
-
-            {method === "crypto" && result.walletAddress && (
-              <div>
-                <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Send to this {result.asset} address</label>
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-[#0A0B0F] border border-white/10">
-                  <code className="flex-1 text-xs text-[#F5F5F5] break-all font-mono">{result.walletAddress}</code>
-                  <button
-                    onClick={() => copyAddress(result.walletAddress)}
-                    className="p-2 rounded-lg hover:bg-white/5 text-[#D4A843] shrink-0"
-                  >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {method === "bank" && result.bankDetails && (
-              <div className="space-y-2 p-4 rounded-xl bg-[#0A0B0F] border border-white/10">
-                <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">Bank</span><span className="text-[#F5F5F5]">{result.bankDetails.bankName}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">Account Name</span><span className="text-[#F5F5F5]">{result.bankDetails.accountName}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">Account Number</span><span className="text-[#F5F5F5] font-mono">{result.bankDetails.accountNumber}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">SWIFT</span><span className="text-[#F5F5F5] font-mono">{result.bankDetails.swiftCode}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-[#A0A0B0]">Reference</span><span className="text-[#D4A843] font-mono">{result.reference}</span></div>
-              </div>
-            )}
-
-            <button
-              onClick={() => { setResult(null); setAmount(""); setPhone("") }}
-              className="w-full py-3 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10 transition"
-            >
-              Make Another Deposit
-            </button>
-          </div>
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <CheckoutForm amount={parseFloat(amount)} onSuccess={() => setSuccess(true)} />
+          </Elements>
         )}
       </Card>
     </div>

@@ -13,7 +13,7 @@ const steps = [
     step: "02",
     icon: Download,
     title: "Fund Your Account",
-    description: "Deposit funds using your preferred payment method — M-Pesa, cards, crypto, or bank transfer. Instant processing.",
+    description: "Deposit funds securely via card payment through Stripe. Instant processing and automatic USDT conversion.",
   },
   {
     step: "03",

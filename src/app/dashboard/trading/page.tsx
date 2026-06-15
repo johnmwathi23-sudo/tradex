@@ -9,7 +9,9 @@ import { Dialog } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
-import SimulatedChart from "@/components/simulated-chart"
+import dynamic from "next/dynamic"
+
+const SimulatedChart = dynamic(() => import("@/components/simulated-chart"), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {

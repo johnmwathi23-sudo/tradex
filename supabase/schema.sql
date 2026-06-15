@@ -36,30 +36,12 @@ CREATE TABLE public.transactions (
   user_id UUID REFERENCES public.profiles(id) NOT NULL,
   account_id UUID REFERENCES public.accounts(id),
   type TEXT NOT NULL CHECK (type IN ('deposit', 'withdrawal')),
-  method TEXT NOT NULL CHECK (method IN ('mpesa', 'card', 'bank_transfer', 'crypto_usdt', 'crypto_btc', 'flutterwave')),
+  method TEXT NOT NULL CHECK (method IN ('stripe', 'card', 'bank_transfer', 'crypto_usdt', 'crypto_btc')),
   amount DECIMAL(18,2) NOT NULL,
   currency TEXT DEFAULT 'USD',
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
   reference TEXT,
   description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- M-Pesa specific transactions
-CREATE TABLE public.mpesa_transactions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  transaction_id UUID REFERENCES public.transactions(id),
-  user_id UUID REFERENCES public.profiles(id),
-  phone_number TEXT NOT NULL,
-  amount DECIMAL(18,2) NOT NULL,
-  merchant_request_id TEXT,
-  checkout_request_id TEXT,
-  mpesa_receipt_number TEXT,
-  result_code TEXT,
-  result_desc TEXT,
-  type TEXT NOT NULL CHECK (type IN ('deposit', 'withdrawal')),
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -139,7 +121,6 @@ CREATE TABLE public.trades (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.mpesa_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.kyc_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.master_traders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.copy_trade_subscriptions ENABLE ROW LEVEL SECURITY;
@@ -150,7 +131,6 @@ CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users read own accounts" ON public.accounts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own transactions" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users read own mpesa" ON public.mpesa_transactions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own kyc" ON public.kyc_documents FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own trades" ON public.trades FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own subscriptions" ON public.copy_trade_subscriptions FOR SELECT USING (auth.uid() = follower_id);

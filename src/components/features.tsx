@@ -42,8 +42,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: "Deposits with Local Providers",
-    description: "We provide hassle-free deposits with our local, trusted providers, making it a breeze.",
+    title: "Card Payments via Stripe",
+    description: "Deposit instantly with your card via Stripe. All funds are automatically converted to USDT.",
   },
   {
     icon: Users,

@@ -1,14 +1,10 @@
-import { CreditCard, Building2, Smartphone, Landmark } from "lucide-react"
+import { CreditCard, Bitcoin } from "lucide-react"
 
 const partners = [
   { icon: CreditCard, name: "Visa" },
   { icon: CreditCard, name: "Mastercard" },
-  { icon: Smartphone, name: "M-Pesa" },
-  { icon: Building2, name: "Bank Transfer" },
-  { icon: Landmark, name: "Skrill" },
-  { icon: Landmark, name: "Neteller" },
-  { icon: Landmark, name: "USDT" },
-  { icon: Landmark, name: "BTC" },
+  { icon: CreditCard, name: "Stripe" },
+  { icon: Bitcoin, name: "USDT" },
 ]
 
 export function PaymentPartners() {
@@ -17,10 +13,10 @@ export function PaymentPartners() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <h3 className="text-xl font-semibold text-[#F5F5F5] mb-2">
-            We partner with trusted global payment leaders
+            Secure card payments powered by Stripe
           </h3>
           <p className="text-sm text-[#A0A0B0]">
-            Fast, secure, and locally tailored deposit and withdrawal solutions
+            All deposits are automatically converted to USDT
           </p>
         </div>
 

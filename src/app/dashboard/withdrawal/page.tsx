@@ -2,20 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Smartphone, CreditCard, Bitcoin, Building2, ShieldAlert } from "lucide-react"
+import { Bitcoin, Loader2, CheckCircle, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 
-const methods = [
-  { id: "mpesa", label: "M-Pesa", icon: Smartphone },
-  { id: "bank_transfer", label: "Bank Transfer", icon: Building2 },
-  { id: "flutterwave", label: "Card", icon: CreditCard },
-  { id: "crypto_usdt", label: "USDT (TRC20)", icon: Bitcoin },
-]
-
 export default function WithdrawalPage() {
-  const [method, setMethod] = useState("mpesa")
   const [amount, setAmount] = useState("")
-  const [details, setDetails] = useState("")
+  const [walletAddress, setWalletAddress] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState("")
@@ -34,7 +26,6 @@ export default function WithdrawalPage() {
     e.preventDefault()
     setLoading(true)
     setError("")
-    setResult(null)
 
     try {
       const res = await fetch("/api/withdrawals", {
@@ -42,8 +33,8 @@ export default function WithdrawalPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: parseFloat(amount),
-          method,
-          details,
+          method: "crypto_usdt",
+          details: walletAddress,
         }),
       })
       const data = await res.json()
@@ -56,18 +47,11 @@ export default function WithdrawalPage() {
     }
   }
 
-  const detailPlaceholder: Record<string, string> = {
-    mpesa: "M-Pesa phone number (e.g. 254712345678)",
-    bank_transfer: "Bank name, account number, account name",
-    flutterwave: "Card number or mobile money handle",
-    crypto_usdt: "USDT (TRC20) wallet address",
-  }
-
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#F5F5F5]">Withdraw</h1>
-        <p className="text-sm text-[#A0A0B0] mt-1">Request a withdrawal to your preferred method</p>
+        <p className="text-sm text-[#A0A0B0] mt-1">Withdraw USDT to your external wallet</p>
       </div>
 
       {!kycLoading && kycStatus !== "approved" && (
@@ -94,30 +78,17 @@ export default function WithdrawalPage() {
         </Card>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        {methods.map((m) => {
-          const Icon = m.icon
-          const selected = method === m.id
-          return (
-            <button
-              key={m.id}
-              onClick={() => { setMethod(m.id); setResult(null); setError("") }}
-              className={`p-4 rounded-xl border text-left transition-all ${
-                selected
-                  ? "bg-[#D4A843]/10 border-[#D4A843]/40 text-[#D4A843]"
-                  : "bg-[#1A1D29]/50 border-white/5 text-[#A0A0B0] hover:border-white/20"
-              }`}
-            >
-              <Icon size={22} className="mb-2" />
-              <div className="text-sm font-semibold text-[#F5F5F5]">{m.label}</div>
-            </button>
-          )
-        })}
-      </div>
-
       <Card className="p-6 max-w-xl">
         {!result ? (
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 mb-2">
+              <Bitcoin size={22} className="text-[#D4A843]" />
+              <div>
+                <div className="text-sm font-semibold text-[#F5F5F5]">USDT (TRC20)</div>
+                <div className="text-xs text-[#A0A0B0]">Withdraw to any USDT wallet</div>
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Amount (USD)</label>
               <input
@@ -133,15 +104,16 @@ export default function WithdrawalPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">Withdrawal Details</label>
+              <label className="text-sm font-medium text-[#A0A0B0] block mb-1.5">USDT (TRC20) Wallet Address</label>
               <input
                 type="text"
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                placeholder={detailPlaceholder[method]}
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                placeholder="Enter your USDT wallet address"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
                 required
               />
+              <p className="text-xs text-[#A0A0B0] mt-1">TRC20 network addresses only</p>
             </div>
 
             {error && (
@@ -152,21 +124,23 @@ export default function WithdrawalPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              disabled={loading || kycStatus !== "approved"}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? "Processing..." : `Withdraw $${parseFloat(amount) || 0}`}
+              {loading && <Loader2 size={16} className="animate-spin" />}
+              Withdraw ${parseFloat(amount) || 0}
             </button>
           </form>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-[#00C853]/10 border border-[#00C853]/20 text-center">
-              <div className="text-lg font-bold text-[#00C853] mb-1">Withdrawal Submitted</div>
+            <div className="text-center space-y-4">
+              <CheckCircle size={48} className="text-[#00C853] mx-auto" />
+              <div className="text-lg font-bold text-[#00C853]">Withdrawal Submitted</div>
               <p className="text-sm text-[#A0A0B0]">{result.message}</p>
-              <p className="text-xs text-[#D4A843] mt-2 font-mono">Ref: {result.reference}</p>
+              <p className="text-xs text-[#D4A843] font-mono">Ref: {result.reference}</p>
             </div>
             <button
-              onClick={() => { setResult(null); setAmount(""); setDetails("") }}
+              onClick={() => { setResult(null); setAmount(""); setWalletAddress("") }}
               className="w-full py-3 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10 transition"
             >
               Request Another Withdrawal

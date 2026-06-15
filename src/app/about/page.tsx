@@ -24,7 +24,7 @@ export default function AboutPage() {
             </p>
             <p className="text-[#A0A0B0] leading-relaxed mb-6">
               Headquartered with a global vision, we understand the unique needs of traders
-              in every market. From M-Pesa deposits to local payment solutions, every feature is designed
+              in every market. From instant card deposits to automated USDT conversion, every feature is designed
               with our global community in mind.
             </p>
             <p className="text-[#A0A0B0] leading-relaxed">

@@ -16,11 +16,11 @@ const faqs = [
   },
   {
     q: "What is the minimum deposit?",
-    a: "The minimum deposit depends on your chosen account type. Standard accounts start from $10, ECN accounts from $50, and PRO accounts from $500. We also support deposits in multiple currencies including KES, USD, EUR, and NGN.",
+    a: "The minimum deposit depends on your chosen account type. Standard accounts start from $10, ECN accounts from $50, and PRO accounts from $500. Deposits are processed via card payment through Stripe.",
   },
   {
-    q: "How do I deposit funds using M-Pesa?",
-    a: "Simply log in to your dashboard, click 'Deposit', select M-Pesa as your payment method, enter the amount and your M-Pesa phone number. You will receive an STK push on your phone to confirm the payment. Funds are credited instantly upon confirmation.",
+    q: "How do I deposit funds?",
+    a: "Simply log in to your dashboard, click 'Deposit', enter the amount and your card details. Payments are processed securely via Stripe. Funds are credited instantly and automatically converted to USDT.",
   },
   {
     q: "Is Primestone Markets regulated?",
@@ -32,7 +32,7 @@ const faqs = [
   },
   {
     q: "How long do withdrawals take?",
-    a: "Withdrawals are processed within 24 hours on business days. M-Pesa withdrawals are processed instantly once approved. Bank transfers may take 1-3 business days depending on your region.",
+    a: "Withdrawals are processed within 24 hours on business days. USDT withdrawals are sent directly to your external wallet once approved.",
   },
   {
     q: "What leverage do you offer?",

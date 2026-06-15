@@ -27,6 +27,15 @@ export const metadata: Metadata = {
     icon: "/images/primestone-logo.svg",
     apple: "/images/primestone-logo.svg",
   },
+  manifest: "/manifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Primestone Markets",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 }
 
 export const viewport: Viewport = {
@@ -34,6 +43,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#0A0B0F",
 }
 
 export default function RootLayout({
