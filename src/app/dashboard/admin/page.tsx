@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
-import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign, Bot, Zap } from "lucide-react"
+import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign, Bot, Zap, Wallet, CheckCircle, XCircle, ExternalLink, Loader2 } from "lucide-react"
 
 type Stats = {
   totalUsers: number
@@ -24,12 +24,25 @@ type Signal = {
   created_at: string
 }
 
+type Deposit = {
+  id: string
+  user_id: string
+  amount: number
+  status: string
+  proof_url: string | null
+  metadata: { tx_hash?: string } | null
+  created_at: string
+  profiles: { email: string; first_name: string; last_name: string } | null
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [signals, setSignals] = useState<Signal[]>([])
   const [generating, setGenerating] = useState(false)
   const [executing, setExecuting] = useState<string | null>(null)
   const [result, setResult] = useState<string>("")
+  const [deposits, setDeposits] = useState<Deposit[]>([])
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -37,7 +50,31 @@ export default function AdminPage() {
       .then(setStats)
       .catch(() => {})
     fetchSignals()
+    fetchDeposits()
   }, [])
+
+  async function fetchDeposits() {
+    try {
+      const res = await fetch("/api/admin/deposits/crypto")
+      const data = await res.json()
+      if (data.deposits) setDeposits(data.deposits)
+    } catch {}
+  }
+
+  async function handleDeposit(id: string, action: "confirmed" | "rejected") {
+    setProcessingId(id)
+    try {
+      await fetch(`/api/admin/deposits/crypto/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      })
+      fetchDeposits()
+      fetch("/api/admin/stats").then((r) => r.json()).then(setStats).catch(() => {})
+    } finally {
+      setProcessingId(null)
+    }
+  }
 
   async function fetchSignals() {
     try {
@@ -186,6 +223,71 @@ export default function AdminPage() {
                       {executing === s.id ? "..." : "Execute"}
                     </button>
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-[#D4A843]/20 flex items-center justify-center">
+            <Wallet size={20} className="text-[#D4A843]" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-[#F5F5F5]">Pending Crypto Deposits</h2>
+            <p className="text-xs text-[#A0A0B0]">{deposits.filter(d => d.status === "pending").length} awaiting confirmation</p>
+          </div>
+        </div>
+
+        {deposits.filter(d => d.status === "pending").length === 0 ? (
+          <p className="text-sm text-[#A0A0B0]">No pending deposits</p>
+        ) : (
+          <div className="space-y-2">
+            {deposits.filter(d => d.status === "pending").map((d) => (
+              <div key={d.id} className="flex items-center justify-between p-3 rounded-xl bg-[#0A0B0F] border border-white/5">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-[#F5F5F5]">
+                    ${d.amount.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-[#A0A0B0]">
+                    {d.profiles ? `${d.profiles.first_name || ""} ${d.profiles.last_name || ""}`.trim() || d.profiles.email : d.user_id}
+                  </div>
+                  {d.metadata?.tx_hash && (
+                    <div className="text-xs text-[#A0A0B0] font-mono truncate max-w-[200px]">
+                      TX: {d.metadata.tx_hash}
+                    </div>
+                  )}
+                  <div className="text-xs text-[#A0A0B0]">
+                    {new Date(d.created_at).toLocaleString()}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {d.proof_url && (
+                    <a
+                      href={d.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg bg-white/5 text-[#A0A0B0] hover:text-[#D4A843] hover:bg-[#D4A843]/10 transition"
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => handleDeposit(d.id, "confirmed")}
+                    disabled={processingId === d.id}
+                    className="p-2 rounded-lg bg-[#00C853]/10 text-[#00C853] hover:bg-[#00C853]/20 transition disabled:opacity-50"
+                  >
+                    {processingId === d.id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                  </button>
+                  <button
+                    onClick={() => handleDeposit(d.id, "rejected")}
+                    disabled={processingId === d.id}
+                    className="p-2 rounded-lg bg-[#FF1744]/10 text-[#FF1744] hover:bg-[#FF1744]/20 transition disabled:opacity-50"
+                  >
+                    <XCircle size={16} />
+                  </button>
                 </div>
               </div>
             ))}

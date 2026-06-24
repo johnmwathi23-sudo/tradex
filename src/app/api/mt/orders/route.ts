@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { getRealTimePrice, contractSize } from "@/lib/prices"
 import { NextResponse } from "next/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
+import { copyTradeToFollowers } from "@/lib/auto-trader"
 
 function biasedPnl(rawPnl: number, ageMinutes: number, durationMinutes: number, balance: number): number {
   const progress = Math.min(ageMinutes / durationMinutes, 1)
@@ -124,12 +126,25 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  let copiedTo = 0
+  const { data: master } = await supabaseAdmin
+    .from("master_traders")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .single()
+
+  if (master) {
+    copiedTo = await copyTradeToFollowers(trade.id, master.id)
+  }
+
   return NextResponse.json({
     ...trade,
     bid: price.bid,
     ask: price.ask,
     duration: tradeDuration,
     close_time: new Date(new Date(trade.created_at).getTime() + tradeDuration * 60000).toISOString(),
-    message: `Order executed: ${type.toUpperCase()} ${symbol} ${volume} lots @ ${entryPrice}`,
+    message: `Order executed: ${type.toUpperCase()} ${symbol} ${volume} lots @ ${entryPrice}` + (copiedTo > 0 ? ` (Copied to ${copiedTo} followers)` : ""),
+    copied_to_followers: copiedTo,
   }, { status: 201 })
 }

@@ -110,7 +110,7 @@ export async function executeSignal(
   return { success: true, tradeId: trade.id, copiedTo }
 }
 
-async function copyTradeToFollowers(tradeId: string, masterTraderId: string, signal: { id: string }): Promise<number> {
+export async function copyTradeToFollowers(tradeId: string, masterTraderId: string, signal?: { id: string }): Promise<number> {
   const { data: subscriptions } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .select("*")
@@ -157,8 +157,8 @@ async function copyTradeToFollowers(tradeId: string, masterTraderId: string, sig
       stop_loss: masterTrade.stop_loss,
       take_profit: masterTrade.take_profit,
       status: "open",
-      is_ai_generated: true,
-      signal_id: signal.id,
+      is_ai_generated: !!signal,
+      ...(signal ? { signal_id: signal.id } : {}),
     })
     copiedCount++
   }
