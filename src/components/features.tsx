@@ -42,8 +42,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: "Card Payments via Stripe",
-    description: "Deposit instantly with your card via Stripe. All funds are automatically converted to USDT.",
+    title: "USDT Deposits (TRC-20)",
+    description: "Fund your account with USDT on the TRC-20 network. Quick, secure, and no intermediaries.",
   },
   {
     icon: Users,

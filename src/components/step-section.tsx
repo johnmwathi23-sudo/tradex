@@ -13,7 +13,7 @@ const steps = [
     step: "02",
     icon: Download,
     title: "Fund Your Account",
-    description: "Deposit funds securely via card payment through Stripe. Instant processing and automatic USDT conversion.",
+    description: "Deposit funds using USDT (TRC-20). Send to our wallet, upload proof, and get credited after admin confirmation.",
   },
   {
     step: "03",
