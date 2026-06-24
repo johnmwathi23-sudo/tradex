@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
@@ -14,13 +13,6 @@ const nextConfig: NextConfig = {
         hostname: "s3.tradingview.com",
       },
     ],
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@": path.join(process.cwd(), "src"),
-    }
-    return config
   },
 };
 
