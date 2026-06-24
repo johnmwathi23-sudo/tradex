@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { ToastProvider } from "@/components/ui/toast"
 import ThreeProvider from "@/components/ThreeProvider"
 import LoadingScreen from "@/components/LoadingScreen"
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({
   variable: "--font-inter",
@@ -64,6 +65,7 @@ export default function RootLayout({
             </ToastProvider>
           </AuthProvider>
         </ThreeProvider>
+        <Analytics />
       </body>
     </html>
   )
