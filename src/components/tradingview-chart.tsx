@@ -45,11 +45,11 @@ declare global {
   }
 }
 
-export default function TradingViewChart({ height = 500 }: { height?: number }) {
+export default function TradingViewChart({ height = 500, symbol: externalSymbol, onSymbolChange }: { height?: number; symbol?: string; onSymbolChange?: (sym: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetRef = useRef<any>(null)
   const scriptLoadedRef = useRef(false)
-  const [symbol, setSymbol] = useState("EURUSD")
+  const [symbol, setSymbol] = useState(externalSymbol || "EURUSD")
   const [interval, setInterval] = useState("60")
   const [scriptLoaded, setScriptLoaded] = useState(false)
   const [scriptError, setScriptError] = useState("")
@@ -114,7 +114,7 @@ export default function TradingViewChart({ height = 500 }: { height?: number }) 
 
   useEffect(() => {
     if (!scriptLoaded) return
-    createWidget(symbol, interval)
+    createWidget(activeSymbol, interval)
     return () => {
       if (widgetRef.current) {
         try { widgetRef.current.remove() } catch {}
@@ -123,29 +123,39 @@ export default function TradingViewChart({ height = 500 }: { height?: number }) 
   }, [scriptLoaded, height])
 
   useEffect(() => {
-    if (!widgetRef.current || !window.TradingView) return
-    const tvSymbol = TV_SYMBOLS[symbol] || symbol
-    widgetRef.current.setSymbol(tvSymbol, interval)
-  }, [symbol])
+    if (externalSymbol && externalSymbol !== symbol) {
+      setSymbol(externalSymbol)
+    }
+  }, [externalSymbol])
+
+  const activeSymbol = externalSymbol || symbol
 
   useEffect(() => {
     if (!widgetRef.current || !window.TradingView) return
-    const tvSymbol = TV_SYMBOLS[symbol] || symbol
+    const tvSymbol = TV_SYMBOLS[activeSymbol] || activeSymbol
+    widgetRef.current.setSymbol(tvSymbol, interval)
+  }, [activeSymbol])
+
+  useEffect(() => {
+    if (!widgetRef.current || !window.TradingView) return
+    const tvSymbol = TV_SYMBOLS[activeSymbol] || activeSymbol
     widgetRef.current.setSymbol(tvSymbol, interval)
   }, [interval])
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
-        <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          className="px-3 py-2 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
-        >
-          {instruments.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        {!externalSymbol && (
+          <select
+            value={symbol}
+            onChange={(e) => { setSymbol(e.target.value); onSymbolChange?.(e.target.value) }}
+            className="px-3 py-2 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
+          >
+            {instruments.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        )}
 
         <div className="flex gap-1 bg-[#0A0B0F] rounded-xl border border-white/10 p-1">
           {TIMEFRAMES.map((tf) => (

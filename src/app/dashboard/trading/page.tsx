@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 
-const SimulatedChart = dynamic(() => import("@/components/simulated-chart"), { ssr: false })
+const TradingViewChart = dynamic(() => import("@/components/tradingview-chart"), { ssr: false })
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {
@@ -247,14 +247,6 @@ export default function TradingPage() {
     }
   }
 
-  const entryPositions = openTrades.map((t) => ({
-    id: t.id,
-    symbol: t.symbol,
-    type: t.type,
-    open_price: t.open_price,
-    volume: t.volume,
-  }))
-
   const totalUnrealizedPnL = openTrades.reduce((sum, t) => sum + (t.unrealized_pnl || 0), 0)
 
   return (
@@ -284,8 +276,8 @@ export default function TradingPage() {
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="h-[280px] sm:h-[400px] lg:h-[500px] bg-[#0A0B0F] relative">
-            <SimulatedChart symbol={selectedInstrument} currentPrice={price?.mid ?? null} positions={entryPositions} />
+          <div className="bg-[#0A0B0F] relative">
+            <TradingViewChart symbol={selectedInstrument} height={500} />
             {price && (
               <div className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10 select-none">
                 <div className="flex items-baseline gap-2">
