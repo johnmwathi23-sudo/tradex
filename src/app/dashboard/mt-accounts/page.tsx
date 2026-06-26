@@ -146,7 +146,7 @@ export default function MtAccountsPage() {
         <div className="text-center">
           <Upload size={40} className="mx-auto mb-3 text-[#D4A843] opacity-70" />
           <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Verification Required</h3>
-          <p className="text-sm text-[#A0A0B0] mb-4">To link a real account, upload your Kenyan National ID (front and back in one file).</p>
+          <p className="text-sm text-[#A0A0B0] mb-4">To open a real account, upload your Kenyan National ID (front and back in one file).</p>
         </div>
         <div className="p-4 rounded-xl bg-[#0A0B0F] border border-white/10">
           <label className="text-sm font-medium text-[#A0A0B0] block mb-2">Kenyan National ID</label>
@@ -198,7 +198,7 @@ export default function MtAccountsPage() {
             onClick={() => { setShowLink(!showLink); setShowDemo(false); setDemoResult(null); setError(""); if (!showLink) { setKycFetched(false); fetchKycStatus() } }}
             className="px-4 py-2 rounded-xl bg-[#2196F3]/10 text-[#2196F3] text-sm font-medium hover:bg-[#2196F3]/20 flex items-center gap-2"
           >
-            <Plus size={16} /> Link Account
+            <Plus size={16} /> Open Real Account
           </button>
         </div>
       </div>
@@ -279,8 +279,8 @@ export default function MtAccountsPage() {
 
               {linkForm.account_type === "real" && kycStatus === "approved" && (
                 <form onSubmit={handleLink} className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#F5F5F5]">Link Real Account</h3>
-                  <p className="text-sm text-[#A0A0B0]">Connect your existing trading account</p>
+                  <h3 className="text-lg font-semibold text-[#F5F5F5]">Open Real Account</h3>
+                  <p className="text-sm text-[#A0A0B0]">Open a real trading account</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Login ID</label>
@@ -314,7 +314,7 @@ export default function MtAccountsPage() {
                     <input type="password" value={linkForm.investor_password} onChange={(e) => setLinkForm({ ...linkForm, investor_password: e.target.value })} placeholder="Read-only password for trade copying" className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm" />
                   </div>
                   {error && <div className="p-3 rounded-xl bg-[#FF1744]/10 text-sm text-[#FF1744]">{error}</div>}
-                  <button type="submit" className="w-full py-3 rounded-xl bg-[#2196F3] text-white font-semibold text-sm hover:opacity-90">Link Account</button>
+                  <button type="submit" className="w-full py-3 rounded-xl bg-[#2196F3] text-white font-semibold text-sm hover:opacity-90">Open Real Account</button>
                 </form>
               )}
 
@@ -322,7 +322,7 @@ export default function MtAccountsPage() {
                 <div className="text-center py-4 md:py-6">
                   <FileText size={40} className="mx-auto mb-3 text-[#D4A843] opacity-70" />
                   <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Under Review</h3>
-                  <p className="text-sm text-[#A0A0B0]">Your Kenyan ID is being reviewed. You'll be able to link a real account once approved.</p>
+                  <p className="text-sm text-[#A0A0B0]">Your Kenyan ID is being reviewed. You'll be able to open a real account once approved.</p>
                   <div className="mt-4 p-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20">
                     <p className="text-xs text-[#D4A843]">Status: Submitted — awaiting admin verification</p>
                   </div>
@@ -346,8 +346,8 @@ export default function MtAccountsPage() {
 
               {linkForm.account_type === "demo" && (
                 <form onSubmit={handleLink} className="space-y-4">
-                  <h3 className="text-lg font-semibold text-[#F5F5F5]">Link Demo Account</h3>
-                  <p className="text-sm text-[#A0A0B0]">Connect your existing demo trading account</p>
+                  <h3 className="text-lg font-semibold text-[#F5F5F5]">Open Demo Account</h3>
+                  <p className="text-sm text-[#A0A0B0]">Open a demo trading account</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Login ID</label>
@@ -377,7 +377,7 @@ export default function MtAccountsPage() {
                     <input type="text" value={linkForm.broker} onChange={(e) => setLinkForm({ ...linkForm, broker: e.target.value })} className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm" />
                   </div>
                   {error && <div className="p-3 rounded-xl bg-[#FF1744]/10 text-sm text-[#FF1744]">{error}</div>}
-                  <button type="submit" className="w-full py-3 rounded-xl bg-[#2196F3] text-white font-semibold text-sm hover:opacity-90">Link Account</button>
+                  <button type="submit" className="w-full py-3 rounded-xl bg-[#2196F3] text-white font-semibold text-sm hover:opacity-90">Open Demo Account</button>
                 </form>
               )}
             </>
@@ -392,8 +392,8 @@ export default function MtAccountsPage() {
       ) : accounts.length === 0 ? (
         <div className="text-center py-8 md:py-16">
           <Terminal size={48} className="text-[#D4A843] mx-auto mb-3 opacity-50" />
-          <p className="text-sm text-[#A0A0B0]">No trading accounts linked</p>
-          <p className="text-xs text-[#A0A0B0] mt-1">Create a demo account or link an existing account</p>
+          <p className="text-sm text-[#A0A0B0]">No trading accounts</p>
+          <p className="text-xs text-[#A0A0B0] mt-1">Open a demo or real account to start trading</p>
         </div>
       ) : (
         <div className="grid gap-4">

@@ -264,7 +264,7 @@ export default function TradingPage() {
             </select>
           )}
           <a href="/dashboard/mt-accounts" className="shrink-0 px-3 py-2 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10">
-            Accounts
+            Real Account
           </a>
         </div>
       </div>
@@ -283,7 +283,7 @@ export default function TradingPage() {
               <div className="text-center py-6 md:py-8">
                 <p className="text-sm text-[#A0A0B0]">No trading account connected</p>
                 <a href="/dashboard/mt-accounts" className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] text-sm font-medium hover:bg-[#D4A843]/20">
-                  Connect Account
+                  Open Real Account
                 </a>
               </div>
             ) : (

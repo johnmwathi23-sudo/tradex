@@ -21,6 +21,11 @@ export async function POST(req: Request) {
   const demoServer = demoAccounts[platform].server
   const balance = 500.00
 
+  const { count } = await supabase
+    .from("mt_accounts")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+
   const { data, error } = await supabase
     .from("mt_accounts")
     .insert({
@@ -36,7 +41,7 @@ export async function POST(req: Request) {
       equity: balance,
       leverage: leverage || "1:100",
       status: "connected",
-      is_default: (await supabase.from("mt_accounts").select("id", { count: "exact", head: true }).eq("user_id", user.id)).count === 0,
+      is_default: (count ?? 0) === 0,
     })
     .select()
     .single()

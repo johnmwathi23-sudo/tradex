@@ -15,6 +15,7 @@ export default function DepositPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -74,6 +75,13 @@ export default function DepositPage() {
       if (!res.ok) throw new Error(data.error)
 
       setSuccess(true)
+      try {
+        const balRes = await fetch("/api/mt/accounts")
+        const balData = await balRes.json()
+        const list = Array.isArray(balData) ? balData : []
+        const def = list.find((a: any) => a.is_default) || list[0]
+        if (def) setCurrentBalance(def.balance)
+      } catch {}
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -95,6 +103,12 @@ export default function DepositPage() {
               Your deposit of ${parseFloat(amount).toFixed(2)} has been submitted for review.
               An admin will confirm it once the payment is verified on-chain.
             </p>
+            {currentBalance != null && (
+              <div className="p-4 rounded-xl bg-[#0A0B0F] border border-white/10">
+                <p className="text-xs text-[#A0A0B0]">Current Account Balance</p>
+                <p className="text-2xl font-bold text-[#00C853]">${currentBalance.toLocaleString()}</p>
+              </div>
+            )}
             <button
               onClick={() => { setSuccess(false); setAmount(""); setTxHash(""); setFile(null); setPreview(null) }}
               className="w-full py-3 rounded-xl bg-white/5 text-[#A0A0B0] text-sm font-medium hover:bg-white/10 transition"
