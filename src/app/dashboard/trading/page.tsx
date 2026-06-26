@@ -83,8 +83,6 @@ type Price = {
   source: string
 }
 
-const categories = ["forex", "commodities", "indices", "crypto"]
-
 function formatCountdown(ms: number): string {
   if (ms <= 0) return "0:00"
   const m = Math.floor(ms / 60000)
@@ -99,7 +97,6 @@ export default function TradingPage() {
   const [closedTrades, setClosedTrades] = useState<Trade[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>("")
   const [selectedInstrument, setSelectedInstrument] = useState("XAUUSD")
-  const [activeCategory, setActiveCategory] = useState("forex")
   const [volume, setVolume] = useState("0.5")
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy")
   const [tradeDuration, setTradeDuration] = useState(5)
@@ -183,8 +180,6 @@ export default function TradingPage() {
     setPrice(null)
     fetchPrice()
   }, [selectedInstrument, fetchPrice])
-
-  const filteredInstruments = instruments.filter((i) => i.category === activeCategory)
 
   const selectedAccountData = accounts.find((a) => a.id === selectedAccount)
 
@@ -278,52 +273,6 @@ export default function TradingPage() {
         <Card className="lg:col-span-2 p-0 overflow-hidden">
           <div className="bg-[#0A0B0F] relative">
             <TradingViewChart symbol={selectedInstrument} height={500} />
-            {price && (
-              <div className="absolute top-3 left-3 z-20 bg-[#0A0B0F]/90 px-3 py-2 rounded-lg border border-white/10 select-none">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold font-mono text-[#F5F5F5]">{price.bid.toFixed(5)}</span>
-                  <span className="text-xs text-[#A0A0B0]">/</span>
-                  <span className="text-lg font-bold font-mono text-[#F5F5F5]">{price.ask.toFixed(5)}</span>
-                </div>
-                <div className="flex gap-3 text-xs text-[#A0A0B0] mt-0.5">
-                  <span>Spread: <span className="text-[#D4A843] font-mono">{price.spread.toFixed(5)}</span></span>
-                  <span className="text-[#00C853]">LIVE</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="p-2 sm:p-3 border-t border-white/5">
-            <div className="flex gap-1 overflow-x-auto">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={cn(
-                    "shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition",
-                    activeCategory === cat ? "bg-[#D4A843]/15 text-[#D4A843]" : "text-[#A0A0B0] hover:text-[#F5F5F5] hover:bg-white/5"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 mt-2 overflow-x-auto">
-              {filteredInstruments.map((inst) => (
-                <button
-                  key={inst.id}
-                  onClick={() => setSelectedInstrument(inst.symbol)}
-                  className={cn(
-                    "shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition",
-                    selectedInstrument === inst.symbol
-                      ? "bg-[#2196F3]/15 text-[#2196F3] border border-[#2196F3]/30"
-                      : "text-[#A0A0B0] hover:text-[#F5F5F5] bg-white/5"
-                  )}
-                >
-                  {inst.symbol}
-                </button>
-              ))}
-            </div>
           </div>
         </Card>
 
