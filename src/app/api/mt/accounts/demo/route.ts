@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 const demoAccounts: Record<string, { server: string; broker: string }> = {
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   const demoServer = demoAccounts[platform].server
   const balance = 500.00
 
-  const { data, error } = await supabase
+  const { error } = await supabaseAdmin
     .from("mt_accounts")
     .insert({
       user_id: user.id,
@@ -38,12 +39,23 @@ export async function POST(req: Request) {
       status: "connected",
       is_default: false,
     })
-    .select()
+
+  if (error) {
+    console.error("Demo account insert error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  const { data } = await supabaseAdmin
+    .from("mt_accounts")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("login_id", demoLogin)
+    .eq("platform", platform)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  if (!data) return NextResponse.json({ error: "No data returned" }, { status: 500 })
+  if (!data) return NextResponse.json({ error: "Account created but not found" }, { status: 500 })
 
   return NextResponse.json({
     ...data,
