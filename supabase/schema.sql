@@ -86,7 +86,6 @@ CREATE TABLE public.copy_trade_subscriptions (
   allocation_percentage DECIMAL(5,2) NOT NULL,
   allocated_amount DECIMAL(18,2) DEFAULT 0.00,
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paused', 'stopped')),
-  max_drawdown DECIMAL(5,2) DEFAULT 20.00,
   auto_topup BOOLEAN DEFAULT FALSE,
   started_at TIMESTAMPTZ DEFAULT NOW(),
   ended_at TIMESTAMPTZ,

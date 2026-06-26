@@ -133,11 +133,6 @@ export async function copyTradeToFollowers(tradeId: string, masterTraderId: stri
     const followerMT = await getTraderMTAccount(sub.follower_id)
     if (!followerMT) continue
 
-    if (sub.max_drawdown != null && sub.max_drawdown < 100) {
-      const isOverDrawdown = await isFollowerOverMaxDrawdown(sub.follower_id, sub.max_drawdown)
-      if (isOverDrawdown) continue
-    }
-
     if (sub.allocated_amount > 0 && followerMT.balance != null) {
       const currentAllocated = await getCurrentAllocatedToMaster(sub.follower_id, masterTraderId)
       if (currentAllocated >= sub.allocated_amount) continue
@@ -164,22 +159,6 @@ export async function copyTradeToFollowers(tradeId: string, masterTraderId: stri
   }
 
   return copiedCount
-}
-
-async function isFollowerOverMaxDrawdown(followerId: string, maxDrawdown: number): Promise<boolean> {
-  const { data: account } = await supabaseAdmin
-    .from("mt_accounts")
-    .select("balance, equity")
-    .eq("user_id", followerId)
-    .eq("status", "connected")
-    .order("is_default", { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!account || !account.balance || account.balance <= 0) return false
-
-  const drawdownPercent = ((account.balance - (account.equity ?? account.balance)) / account.balance) * 100
-  return drawdownPercent > maxDrawdown
 }
 
 async function getCurrentAllocatedToMaster(followerId: string, masterTraderId: string): Promise<number> {

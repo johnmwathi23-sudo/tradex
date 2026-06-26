@@ -38,14 +38,6 @@ export async function PATCH(
     updates.allocated_amount = amt
   }
 
-  if (body.max_drawdown != null) {
-    const dd = Number(body.max_drawdown)
-    if (isNaN(dd) || dd < 0 || dd > 100) {
-      return NextResponse.json({ error: "Max drawdown must be between 0 and 100" }, { status: 400 })
-    }
-    updates.max_drawdown = dd
-  }
-
   if (body.auto_topup != null) {
     updates.auto_topup = Boolean(body.auto_topup)
   }

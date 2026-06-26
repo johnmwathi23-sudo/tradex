@@ -35,7 +35,6 @@ type Subscription = {
   master_trader_id: string
   allocation_percentage: number
   allocated_amount: number
-  max_drawdown: number
   auto_topup: boolean
   status: string
   started_at: string
@@ -47,6 +46,8 @@ type Trade = {
   type: string
   volume: number
   open_price: number
+  current_price: number
+  unrealized_pnl: number
   profit: number | null
   status: string
   created_at: string
@@ -82,12 +83,12 @@ export default function CopyTradingPage() {
 
   const [showFollowDialog, setShowFollowDialog] = useState(false)
   const [followTarget, setFollowTarget] = useState<MasterTrader | null>(null)
-  const [followForm, setFollowForm] = useState({ allocationPercentage: 10, allocatedAmount: 0, maxDrawdown: 20, autoTopup: false })
+  const [followForm, setFollowForm] = useState({ allocationPercentage: 10, allocatedAmount: 0, autoTopup: false })
   const [followLoading, setFollowLoading] = useState(false)
 
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editTargetSub, setEditTargetSub] = useState<Subscription | null>(null)
-  const [editForm, setEditForm] = useState({ allocation_percentage: 10, allocated_amount: 0, max_drawdown: 20, auto_topup: false })
+  const [editForm, setEditForm] = useState({ allocation_percentage: 10, allocated_amount: 0, auto_topup: false })
   const [editLoading, setEditLoading] = useState(false)
 
   const [unfollowTarget, setUnfollowTarget] = useState<{ subId: string; name: string } | null>(null)
@@ -195,7 +196,6 @@ export default function CopyTradingPage() {
     setFollowForm({
       allocationPercentage: existing?.allocation_percentage ?? 10,
       allocatedAmount: existing?.allocated_amount ?? 0,
-      maxDrawdown: existing?.max_drawdown ?? 20,
       autoTopup: existing?.auto_topup ?? false,
     })
     setShowFollowDialog(true)
@@ -212,7 +212,6 @@ export default function CopyTradingPage() {
           masterTraderId: followTarget.id,
           allocationPercentage: followForm.allocationPercentage,
           allocatedAmount: followForm.allocatedAmount,
-          maxDrawdown: followForm.maxDrawdown,
           autoTopup: followForm.autoTopup,
         }),
       })
@@ -279,7 +278,6 @@ export default function CopyTradingPage() {
     setEditForm({
       allocation_percentage: sub.allocation_percentage,
       allocated_amount: sub.allocated_amount,
-      max_drawdown: sub.max_drawdown,
       auto_topup: sub.auto_topup,
     })
     setShowEditDialog(true)
@@ -554,9 +552,6 @@ export default function CopyTradingPage() {
                     Allocated: <strong className="text-[#F5F5F5]">${Number(sub.allocated_amount).toFixed(2)}</strong>
                   </span>
                   <span>
-                    Max Drawdown: <strong className="text-[#F5F5F5]">{sub.max_drawdown}%</strong>
-                  </span>
-                  <span>
                     Auto Top-up:{" "}
                     <strong className={sub.auto_topup ? "text-[#00C853]" : "text-[#A0A0B0]"}>
                       {sub.auto_topup ? "On" : "Off"}
@@ -595,14 +590,17 @@ export default function CopyTradingPage() {
                                 <tr className="text-[#A0A0B0] border-b border-white/5">
                                   <th className="text-left py-2 pr-3 font-medium">Symbol</th>
                                   <th className="text-left py-2 pr-3 font-medium">Type</th>
-                                  <th className="text-right py-2 pr-3 font-medium">Volume</th>
-                                  <th className="text-right py-2 pr-3 font-medium">Price</th>
-                                  <th className="text-right py-2 pr-3 font-medium">Profit</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Vol</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Entry</th>
+                                  <th className="text-right py-2 pr-3 font-medium">Current</th>
+                                  <th className="text-right py-2 pr-3 font-medium">P&L</th>
                                   <th className="text-right py-2 font-medium">Status</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {expandedData.recent_trades.map((trade) => (
+                                {expandedData.recent_trades.map((trade) => {
+                                  const pnl = trade.status === "open" ? trade.unrealized_pnl : (trade.profit ?? 0)
+                                  return (
                                   <tr key={trade.id} className="border-b border-white/5 last:border-0">
                                     <td className="py-2 pr-3 text-[#F5F5F5] font-medium">{trade.symbol}</td>
                                     <td className={cn("py-2 pr-3", trade.type === "buy" ? "text-[#00C853]" : "text-[#FF1744]")}>
@@ -610,8 +608,9 @@ export default function CopyTradingPage() {
                                     </td>
                                     <td className="py-2 pr-3 text-right text-[#F5F5F5]">{trade.volume}</td>
                                     <td className="py-2 pr-3 text-right text-[#F5F5F5]">${Number(trade.open_price).toFixed(5)}</td>
-                                    <td className={cn("py-2 pr-3 text-right", (trade.profit ?? 0) >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
-                                      {trade.profit != null ? `${trade.profit >= 0 ? "+" : ""}$${Number(trade.profit).toFixed(2)}` : "—"}
+                                    <td className="py-2 pr-3 text-right text-[#F5F5F5]">${Number(trade.current_price ?? trade.open_price).toFixed(5)}</td>
+                                    <td className={cn("py-2 pr-3 text-right", pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                                      {pnl != null ? `${pnl >= 0 ? "+" : ""}$${Number(pnl).toFixed(2)}` : "—"}
                                     </td>
                                     <td className="py-2 text-right">
                                       <Badge variant={trade.status === "open" ? "active" : "default"}>
@@ -619,7 +618,7 @@ export default function CopyTradingPage() {
                                       </Badge>
                                     </td>
                                   </tr>
-                                ))}
+                                )})}
                               </tbody>
                             </table>
                           </div>
@@ -664,18 +663,6 @@ export default function CopyTradingPage() {
                 value={followForm.allocatedAmount || ""}
                 onChange={(e) => setFollowForm({ ...followForm, allocatedAmount: Number(e.target.value) || 0 })}
                 placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#A0A0B0] block mb-1">Max Drawdown (%)</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={followForm.maxDrawdown}
-                onChange={(e) => setFollowForm({ ...followForm, maxDrawdown: Number(e.target.value) || 0 })}
               />
             </div>
 
@@ -746,18 +733,6 @@ export default function CopyTradingPage() {
                 value={editForm.allocated_amount || ""}
                 onChange={(e) => setEditForm({ ...editForm, allocated_amount: Number(e.target.value) || 0 })}
                 placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#A0A0B0] block mb-1">Max Drawdown (%)</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={editForm.max_drawdown}
-                onChange={(e) => setEditForm({ ...editForm, max_drawdown: Number(e.target.value) || 0 })}
               />
             </div>
 

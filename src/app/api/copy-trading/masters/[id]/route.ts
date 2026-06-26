@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
+import { getRealTimePrice, contractSize } from "@/lib/prices"
 
 export async function GET(
   _request: Request,
@@ -38,5 +39,18 @@ export async function GET(
     .order("created_at", { ascending: false })
     .limit(20)
 
-  return NextResponse.json({ ...master, recent_trades: trades ?? [] })
+  const enrichedTrades = await Promise.all((trades ?? []).map(async (t: any) => {
+    if (t.status === "open") {
+      const price = await getRealTimePrice(t.symbol)
+      if (price) {
+        const direction = t.type === "buy" ? 1 : -1
+        const rawPnl = Number((direction * (price.mid - Number(t.open_price)) * Number(t.volume) * contractSize(t.symbol)).toFixed(2))
+        return { ...t, current_price: price.mid, unrealized_pnl: rawPnl, mark_price: price.mid }
+      }
+      return { ...t, current_price: t.open_price, unrealized_pnl: 0, mark_price: t.open_price }
+    }
+    return { ...t, current_price: t.close_price || t.open_price, unrealized_pnl: t.profit || 0, mark_price: t.close_price || t.open_price }
+  }))
+
+  return NextResponse.json({ ...master, recent_trades: enrichedTrades })
 }

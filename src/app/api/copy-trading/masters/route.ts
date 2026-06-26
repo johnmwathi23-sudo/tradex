@@ -16,6 +16,7 @@ export async function GET() {
     .from("master_traders")
     .select("*")
     .eq("is_active", true)
+    .order("display_order", { ascending: true })
     .order("total_followers", { ascending: false })
 
   if (error) {

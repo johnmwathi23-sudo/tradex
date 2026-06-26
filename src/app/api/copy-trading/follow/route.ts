@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "KYC documents must be submitted before you can start copy trading." }, { status: 403 })
   }
 
-  const { masterTraderId, allocationPercentage, allocatedAmount, maxDrawdown, autoTopup } = await request.json()
+  const { masterTraderId, allocationPercentage, allocatedAmount, autoTopup } = await request.json()
 
   if (!masterTraderId || allocationPercentage == null) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -56,7 +56,6 @@ export async function POST(request: Request) {
         status: "active",
         allocation_percentage: allocPct,
         allocated_amount: allocatedAmount ?? existing.allocated_amount,
-        max_drawdown: maxDrawdown ?? existing.max_drawdown,
         auto_topup: autoTopup ?? existing.auto_topup,
         ended_at: null,
       })
@@ -77,7 +76,6 @@ export async function POST(request: Request) {
       master_trader_id: masterTraderId,
       allocation_percentage: allocPct,
       allocated_amount: allocatedAmount ?? 0,
-      max_drawdown: maxDrawdown ?? 20.00,
       auto_topup: autoTopup ?? false,
     })
     .select("*, master_trader:master_traders(*)")

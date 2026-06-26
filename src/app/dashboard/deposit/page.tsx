@@ -45,7 +45,7 @@ export default function DepositPage() {
 
     try {
       const numAmount = parseFloat(amount)
-      if (!numAmount || numAmount < 10) throw new Error("Minimum deposit is $10")
+      if (!numAmount || numAmount < 200) throw new Error("Minimum deposit is $200")
       if (!txHash.trim()) throw new Error("Transaction hash is required")
 
       let proofUrl = ""
@@ -161,7 +161,7 @@ export default function DepositPage() {
               <input
                 type="number"
                 step="0.01"
-                min="10"
+                min="200"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"

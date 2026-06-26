@@ -35,11 +35,15 @@ INSERT INTO public.master_traders (user_id, display_name, bio, roi, win_rate, to
 SELECT 
   p.id, 
   'Flossin',
-  'Crypto and indices specialist. 8 years trading BTC, ETH, and NASDAQ. High-conviction swing trader with low drawdown.',
+   'Multi-market expert trading forex, crypto, and indices. Specializes in EUR/USD, GBP/USD, and NASDAQ. Consistent returns with low-risk approach.',
   32.4, 82.1, 156, 847, 'low', 20.00, 25.00, TRUE, TRUE, NOW(), NOW()
 FROM public.profiles p
 WHERE p.email = 'flossin@primestone.com'
 AND NOT EXISTS (SELECT 1 FROM public.master_traders mt WHERE mt.user_id = p.id);
+
+-- Set Flossin as admin (so he can edit his results from his account)
+UPDATE public.profiles SET role = 'admin'
+WHERE email = 'flossin@primestone.com';
 
 -- Verify the data
 SELECT mt.display_name, mt.roi, mt.win_rate, mt.total_followers, mt.total_trades, mt.risk_level, mt.is_verified

@@ -9,7 +9,7 @@ const accounts = [
     tagline: "Trade on the most popular account type",
     spread: "from 1.2",
     spreadLabel: "pip",
-    features: ["No commission", "Market execution", "Fixed & floating spreads", "Web & mobile trading", "Minimum deposit $500"],
+    features: ["No commission", "Market execution", "Fixed & floating spreads", "Web & mobile trading", "Minimum deposit $200"],
     popular: false,
   },
   {
@@ -17,7 +17,7 @@ const accounts = [
     tagline: "Experience the power of direct market access",
     spread: "from 0.0",
     spreadLabel: "pip",
-    features: ["Raw spreads", "No dealing desk", "Deep liquidity", "Scalping allowed", "Minimum deposit $500"],
+    features: ["Raw spreads", "No dealing desk", "Deep liquidity", "Scalping allowed", "Minimum deposit $200"],
     popular: true,
   },
   {
@@ -25,7 +25,7 @@ const accounts = [
     tagline: "Ultra-low spreads for experienced traders",
     spread: "from 0.6",
     spreadLabel: "pip",
-    features: ["Ultra-low spreads", "Zero commissions", "Priority support", "VIP analytics", "Minimum deposit $500"],
+    features: ["Ultra-low spreads", "Zero commissions", "Priority support", "VIP analytics", "Minimum deposit $200"],
     popular: false,
   },
 ]

@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: "What is the minimum deposit?",
-    a: "The minimum deposit depends on your chosen account type. Standard accounts start from $10, ECN accounts from $50, and PRO accounts from $500. Deposits are processed via card payment through Stripe.",
+    a: "The minimum deposit for all account types is $200. Deposits are processed via USDT (TRC-20) and credited to your trading account once confirmed.",
   },
   {
     q: "How do I deposit funds?",
