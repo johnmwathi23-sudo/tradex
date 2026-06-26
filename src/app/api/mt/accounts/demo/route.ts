@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server"
-import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 const demoAccounts: Record<string, { server: string; broker: string }> = {
@@ -22,12 +21,7 @@ export async function POST(req: Request) {
   const demoServer = demoAccounts[platform].server
   const balance = 500.00
 
-  const { count } = await supabaseAdmin
-    .from("mt_accounts")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("mt_accounts")
     .insert({
       user_id: user.id,
@@ -42,12 +36,14 @@ export async function POST(req: Request) {
       equity: balance,
       leverage: leverage || "1:100",
       status: "connected",
-      is_default: (count ?? 0) === 0,
+      is_default: false,
     })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (!data) return NextResponse.json({ error: "No data returned" }, { status: 500 })
 
   return NextResponse.json({
     ...data,
