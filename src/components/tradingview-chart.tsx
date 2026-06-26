@@ -23,18 +23,6 @@ const TV_SYMBOLS: Record<string, string> = {
   UK100: "FTSE:UKX",
 }
 
-const TIMEFRAMES = [
-  { label: "1m", value: "1" },
-  { label: "5m", value: "5" },
-  { label: "15m", value: "15" },
-  { label: "30m", value: "30" },
-  { label: "1h", value: "60" },
-  { label: "4h", value: "240" },
-  { label: "1d", value: "D" },
-  { label: "1W", value: "W" },
-  { label: "1M", value: "M" },
-]
-
 const instruments = Object.keys(TV_SYMBOLS)
 
 declare global {
@@ -50,7 +38,6 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
   const widgetRef = useRef<any>(null)
   const scriptLoadedRef = useRef(false)
   const [symbol, setSymbol] = useState(externalSymbol || "EURUSD")
-  const [interval, setInterval] = useState("60")
   const [scriptLoaded, setScriptLoaded] = useState(false)
   const [scriptError, setScriptError] = useState("")
 
@@ -78,7 +65,7 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
     }
   }, [])
 
-  function createWidget(sym: string, int: string) {
+  function createWidget(sym: string) {
     if (!containerRef.current || !window.TradingView) return
 
     if (widgetRef.current) {
@@ -91,7 +78,7 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
     widgetRef.current = new window.TradingView.widget({
       container_id: containerRef.current.id,
       symbol: tvSymbol,
-      interval: int,
+      interval: "60",
       timezone: "Etc/UTC",
       theme: "dark",
       style: "1",
@@ -114,7 +101,7 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
 
   useEffect(() => {
     if (!scriptLoaded) return
-    createWidget(activeSymbol, interval)
+    createWidget(activeSymbol)
     return () => {
       if (widgetRef.current) {
         try { widgetRef.current.remove() } catch {}
@@ -133,14 +120,8 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
   useEffect(() => {
     if (!widgetRef.current || !window.TradingView) return
     const tvSymbol = TV_SYMBOLS[activeSymbol] || activeSymbol
-    widgetRef.current.setSymbol(tvSymbol, interval)
+    widgetRef.current.setSymbol(tvSymbol)
   }, [activeSymbol])
-
-  useEffect(() => {
-    if (!widgetRef.current || !window.TradingView) return
-    const tvSymbol = TV_SYMBOLS[activeSymbol] || activeSymbol
-    widgetRef.current.setSymbol(tvSymbol, interval)
-  }, [interval])
 
   return (
     <div className="space-y-3">
@@ -156,22 +137,6 @@ export default function TradingViewChart({ height = 500, symbol: externalSymbol,
             ))}
           </select>
         )}
-
-        <div className="flex gap-1 bg-[#0A0B0F] rounded-xl border border-white/10 p-1">
-          {TIMEFRAMES.map((tf) => (
-            <button
-              key={tf.value}
-              onClick={() => setInterval(tf.value)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
-                interval === tf.value
-                  ? "bg-[#D4A843] text-[#0A0B0F]"
-                  : "text-[#A0A0B0] hover:text-[#F5F5F5]"
-              }`}
-            >
-              {tf.label}
-            </button>
-          ))}
-        </div>
 
         {!scriptLoaded && !scriptError && (
           <span className="text-xs text-[#D4A843]">Loading chart...</span>
