@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/components/ui/toast"
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "" })
@@ -13,6 +14,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const { showToast } = useToast()
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -48,13 +50,18 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      await supabase.from("profiles").insert({
+      const { error: profileError } = await supabase.from("profiles").insert({
         id: data.user.id,
         email: form.email,
         first_name: form.firstName,
         last_name: form.lastName,
         phone: form.phone,
       })
+
+      if (profileError) {
+        console.error("Profile creation error:", profileError)
+        showToast("Account created but profile setup had an issue. Please contact support if you see errors.", "error")
+      }
     }
 
     router.push("/dashboard")

@@ -127,6 +127,7 @@ ALTER TABLE public.trades ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read their own data
 CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users read own accounts" ON public.accounts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users read own transactions" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
