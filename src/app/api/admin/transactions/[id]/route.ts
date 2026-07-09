@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-guard"
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function PATCH(
@@ -25,18 +26,40 @@ export async function PATCH(
 
   if (!tx) return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
 
+  const amount = Number(tx.amount)
+
   if (status === "completed" && tx.type === "withdrawal") {
     const { data: account } = await supabase
       .from("accounts")
       .select("balance")
       .eq("user_id", tx.user_id)
-      .single()
+      .maybeSingle()
 
-    if (account && Number(account.balance) >= Number(tx.amount)) {
+    if (account && Number(account.balance) >= amount) {
       await supabase
         .from("accounts")
-        .update({ balance: Number(account.balance) - Number(tx.amount) })
+        .update({ balance: Number(account.balance) - amount })
         .eq("user_id", tx.user_id)
+    }
+
+    const { data: mtAccounts } = await supabaseAdmin
+      .from("mt_accounts")
+      .select("id, balance")
+      .eq("user_id", tx.user_id)
+      .eq("account_type", "real")
+
+    if (mtAccounts) {
+      let remaining = amount
+      for (const mt of mtAccounts) {
+        if (remaining <= 0) break
+        const mtBal = Number(mt.balance)
+        const deduct = Math.min(remaining, mtBal)
+        await supabaseAdmin
+          .from("mt_accounts")
+          .update({ balance: mtBal - deduct, equity: mtBal - deduct })
+          .eq("id", mt.id)
+        remaining -= deduct
+      }
     }
   }
 
@@ -45,13 +68,28 @@ export async function PATCH(
       .from("accounts")
       .select("balance")
       .eq("user_id", tx.user_id)
-      .single()
+      .maybeSingle()
 
     if (account) {
       await supabase
         .from("accounts")
-        .update({ balance: Number(account.balance) + Number(tx.amount) })
+        .update({ balance: Number(account.balance) + amount })
         .eq("user_id", tx.user_id)
+    }
+
+    const { data: mtAccounts } = await supabaseAdmin
+      .from("mt_accounts")
+      .select("id, balance")
+      .eq("user_id", tx.user_id)
+      .eq("account_type", "real")
+
+    if (mtAccounts && mtAccounts.length > 0) {
+      const mt = mtAccounts[0]
+      const mtBal = Number(mt.balance)
+      await supabaseAdmin
+        .from("mt_accounts")
+        .update({ balance: mtBal + amount, equity: mtBal + amount })
+        .eq("id", mt.id)
     }
   }
 

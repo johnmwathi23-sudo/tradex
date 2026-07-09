@@ -29,9 +29,20 @@ export async function POST(req: Request) {
     .from("accounts")
     .select("balance")
     .eq("user_id", user.id)
-    .single()
+    .maybeSingle()
 
-  if (!account || Number(account.balance) < amount) {
+  const { data: mtAccounts } = await supabaseAdmin
+    .from("mt_accounts")
+    .select("id, balance")
+    .eq("user_id", user.id)
+    .eq("account_type", "real")
+    .eq("status", "connected")
+
+  const legacyBalance = account ? Number(account.balance) : 0
+  const mtTotalBalance = (mtAccounts || []).reduce((sum: number, a: { balance: number }) => sum + Number(a.balance || 0), 0)
+  const totalBalance = legacyBalance + mtTotalBalance
+
+  if (totalBalance < amount) {
     return NextResponse.json({ error: "Insufficient balance" }, { status: 400 })
   }
 
@@ -56,10 +67,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  await supabase
-    .from("accounts")
-    .update({ balance: Number(account.balance) - amount })
-    .eq("user_id", user.id)
+  if (account) {
+    const deductFromLegacy = Math.min(amount, legacyBalance)
+    await supabase
+      .from("accounts")
+      .update({ balance: legacyBalance - deductFromLegacy })
+      .eq("user_id", user.id)
+  }
+
+  if (mtAccounts && mtAccounts.length > 0) {
+    let remaining = amount
+    for (const mt of mtAccounts) {
+      if (remaining <= 0) break
+      const mtBal = Number(mt.balance)
+      const deduct = Math.min(remaining, mtBal)
+      await supabaseAdmin
+        .from("mt_accounts")
+        .update({ balance: mtBal - deduct, equity: mtBal - deduct })
+        .eq("id", mt.id)
+      remaining -= deduct
+    }
+  }
 
   return NextResponse.json({
     success: true,

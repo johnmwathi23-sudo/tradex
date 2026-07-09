@@ -46,6 +46,41 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (balanceError) return NextResponse.json({ error: balanceError.message }, { status: 500 })
 
+    const { data: mtAccount } = await supabaseAdmin
+      .from("mt_accounts")
+      .select("id, balance")
+      .eq("user_id", tx.user_id)
+      .eq("account_type", "real")
+      .eq("status", "connected")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (mtAccount) {
+      await supabaseAdmin
+        .from("mt_accounts")
+        .update({ balance: (mtAccount.balance || 0) + tx.amount, equity: (mtAccount.balance || 0) + tx.amount })
+        .eq("id", mtAccount.id)
+    } else {
+      await supabaseAdmin
+        .from("mt_accounts")
+        .insert({
+          user_id: tx.user_id,
+          login_id: `REAL_${Date.now()}`,
+          platform: "mt4",
+          account_type: "real",
+          server: "Primestone-Live",
+          broker: "Primestone Global Markets",
+          investor_password: "Pending",
+          account_currency: "USD",
+          balance: tx.amount,
+          equity: tx.amount,
+          leverage: "1:100",
+          status: "connected",
+          is_default: true,
+        })
+    }
+
     return NextResponse.json({ success: true })
   }
 

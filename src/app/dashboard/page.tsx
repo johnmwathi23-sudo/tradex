@@ -29,7 +29,12 @@ export default function DashboardPage() {
     fetch("/api/account")
       .then((r) => r.json())
       .then((data) => {
-        if (data.account) setAccount(data.account)
+        const mt = data.mtAccounts?.find((a: { account_type: string }) => a.account_type === "real")
+        if (mt) {
+          setAccount({ balance: mt.balance, equity: mt.equity, margin: 0, leverage: mt.leverage })
+        } else if (data.account) {
+          setAccount(data.account)
+        }
       })
       .catch(() => {})
 
