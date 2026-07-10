@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,8 +11,12 @@ import { cn } from "@/lib/utils"
 import {
   TrendingUp, Users, Star, Activity, Copy,
   Search, ChevronDown, ChevronUp, Settings, Pause,
-  Play, ArrowUpDown, AlertTriangle, X, Timer, ZapOff
+  Play, ArrowUpDown, AlertTriangle, X, Timer
 } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const CopyTradingAnalytics = dynamic(() => import("@/components/copy-trading-analytics"), { ssr: false })
+const CopyTradingHistory = dynamic(() => import("@/components/copy-trading-history"), { ssr: false })
 
 type MasterTrader = {
   id: string
@@ -62,45 +66,33 @@ function getLockRemainingDays(startedAt: string): number {
   return Math.ceil(MIN_ACTIVE_DAYS - daysActive)
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed * 9301 + 49297) * 49297
-  return x - Math.floor(x)
-}
-
-function calculateCopyPnL(startedAt: string, allocatedAmount: number) {
-  const elapsed = (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)
-  const ratio = Math.min(elapsed / MIN_ACTIVE_DAYS, 1)
-  const seed = new Date(startedAt).getTime()
-
-  let pnlPercent: number
-  if (ratio >= 1) {
-    pnlPercent = -100
-  } else if (ratio < 0.2) {
-    const t = ratio / 0.2
-    pnlPercent = seededRandom(seed) * 8 * t
-  } else if (ratio < 0.4) {
-    const t = (ratio - 0.2) / 0.2
-    pnlPercent = 8 + seededRandom(seed + 1) * 7 * t
-  } else if (ratio < 0.6) {
-    const t = (ratio - 0.4) / 0.2
-    pnlPercent = 15 - seededRandom(seed + 2) * 20 * t
-  } else if (ratio < 0.8) {
-    const t = (ratio - 0.6) / 0.2
-    pnlPercent = -5 - seededRandom(seed + 3) * 25 * t
-  } else {
-    const t = (ratio - 0.8) / 0.2
-    pnlPercent = -30 - seededRandom(seed + 4) * 50 * t
-  }
-
-  const pnl = (pnlPercent / 100) * allocatedAmount
-  const remainingDays = Math.max(0, MIN_ACTIVE_DAYS - elapsed)
-  const isBlown = ratio >= 1
-
-  return { pnl, pnlPercent, remainingDays, elapsed, ratio, isBlown }
-}
-
 function isLocked(startedAt: string): boolean {
   return getLockRemainingDays(startedAt) > 0
+}
+
+type CopiedTrade = {
+  id: string
+  symbol: string
+  type: string
+  volume: number
+  open_price: number
+  close_price: number | null
+  current_price: number
+  profit: number | null
+  unrealized_pnl: number
+  status: string
+  created_at: string
+  master_name: string
+  master_trade_id: string
+}
+
+type TradeSummary = {
+  totalPnl: number
+  openCount: number
+  closedCount: number
+  winCount: number
+  lossCount: number
+  winRate: number
 }
 
 export default function CopyTradingPage() {
@@ -128,14 +120,11 @@ export default function CopyTradingPage() {
   const [unfollowTarget, setUnfollowTarget] = useState<{ subId: string; name: string } | null>(null)
   const [unfollowLoading, setUnfollowLoading] = useState(false)
   const [pauseLoading, setPauseLoading] = useState<string | null>(null)
-  const [tick, setTick] = useState(0)
+
+  const [copiedTrades, setCopiedTrades] = useState<CopiedTrade[]>([])
+  const [tradeSummary, setTradeSummary] = useState<TradeSummary>({ totalPnl: 0, openCount: 0, closedCount: 0, winCount: 0, lossCount: 0, winRate: 0 })
 
   const { showToast } = useToast()
-
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 3000)
-    return () => clearInterval(interval)
-  }, [])
 
   const subscribedIds = useMemo(
     () => new Set(subscriptions.map((s) => s.master_trader_id)),
@@ -147,27 +136,49 @@ export default function CopyTradingPage() {
     [subscriptions]
   )
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/copy-trading/masters").then((r) => {
-        if (!r.ok) throw new Error("Failed to load masters")
-        return r.json()
-      }),
-      fetch("/api/copy-trading/my-subscriptions").then((r) => {
-        if (!r.ok) throw new Error("Failed to load subscriptions")
-        return r.json()
-      }),
-    ])
-      .then(([mastersData, subsData]) => {
-        setMasters(Array.isArray(mastersData) ? mastersData : [])
-        const subs = Array.isArray(subsData) ? subsData : []
-        setSubscriptions(subs)
-      })
-      .catch((err) => {
-        showToast(err.message, "error")
-      })
-      .finally(() => setLoading(false))
+  const loadData = useCallback(async () => {
+    try {
+      const [mastersRes, subsRes, tradesRes] = await Promise.all([
+        fetch("/api/copy-trading/masters"),
+        fetch("/api/copy-trading/my-subscriptions"),
+        fetch("/api/copy-trading/my-trades"),
+      ])
+      if (!mastersRes.ok || !subsRes.ok || !tradesRes.ok) {
+        throw new Error("Failed to load data")
+      }
+      const [mastersData, subsData, tradesData] = await Promise.all([
+        mastersRes.json(),
+        subsRes.json(),
+        tradesRes.json(),
+      ])
+      setMasters(Array.isArray(mastersData) ? mastersData : [])
+      setSubscriptions(Array.isArray(subsData) ? subsData : [])
+      setCopiedTrades(tradesData.trades || [])
+      setTradeSummary(tradesData.summary || { totalPnl: 0, openCount: 0, closedCount: 0, winCount: 0, lossCount: 0, winRate: 0 })
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to load data", "error")
+    } finally {
+      setLoading(false)
+    }
   }, [showToast])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  // Refresh copied trades every 5 seconds for live PnL updates
+  useEffect(() => {
+    if (loading) return
+    const interval = setInterval(() => {
+      fetch("/api/copy-trading/my-trades")
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return
+          setCopiedTrades(data.trades || [])
+          setTradeSummary(data.summary || { totalPnl: 0, openCount: 0, closedCount: 0, winCount: 0, lossCount: 0, winRate: 0 })
+        })
+        .catch(() => {})
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [loading])
 
   const filteredMasters = useMemo(() => {
     let result = [...masters]
@@ -348,23 +359,37 @@ export default function CopyTradingPage() {
     <div>
       <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Copy Trading</h1>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        {[
-          { icon: Users, value: `${masters.length}+`, label: "Master Traders", color: "#D4A843" },
-          { icon: Activity, value: subscriptions.length.toString(), label: "You Follow", color: "#00C853" },
-          { icon: Star, value: topWinRate, label: "Top Win Rate", color: "#D4A843" },
-        ].map((stat) => (
-          <Card key={stat.label} className="p-4 text-center">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2"
-              style={{ backgroundColor: `${stat.color}15` }}
-            >
-              <stat.icon size={18} style={{ color: stat.color }} />
-            </div>
-            <div className="text-xl font-bold text-[#F5F5F5]">{stat.value}</div>
-            <div className="text-xs text-[#A0A0B0]">{stat.label}</div>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4 text-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: "#D4A84315" }}>
+            <Users size={18} style={{ color: "#D4A843" }} />
+          </div>
+          <div className="text-xl font-bold text-[#F5F5F5]">{masters.length}+</div>
+          <div className="text-xs text-[#A0A0B0]">Master Traders</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: "#00C85315" }}>
+            <Activity size={18} style={{ color: "#00C853" }} />
+          </div>
+          <div className="text-xl font-bold text-[#F5F5F5]">{subscriptions.length}</div>
+          <div className="text-xs text-[#A0A0B0]">You Follow</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: tradeSummary.totalPnl >= 0 ? "#00C85315" : "#FF174415" }}>
+            <TrendingUp size={18} style={{ color: tradeSummary.totalPnl >= 0 ? "#00C853" : "#FF1744" }} />
+          </div>
+          <div className={cn("text-xl font-bold", tradeSummary.totalPnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+            {tradeSummary.totalPnl >= 0 ? "+" : ""}${tradeSummary.totalPnl.toFixed(2)}
+          </div>
+          <div className="text-xs text-[#A0A0B0]">Total P&L</div>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: "#D4A84315" }}>
+            <Star size={18} style={{ color: "#D4A843" }} />
+          </div>
+          <div className="text-xl font-bold text-[#F5F5F5]">{tradeSummary.winRate}%</div>
+          <div className="text-xs text-[#A0A0B0]">Win Rate ({tradeSummary.winCount}W / {tradeSummary.lossCount}L)</div>
+        </Card>
       </div>
 
       <Card className="p-4 mb-6">
@@ -579,40 +604,33 @@ export default function CopyTradingPage() {
               {isFollowing && sub && sub.status === "active" && (
                 <div className="mt-3 pt-3 border-t border-white/5">
                   {(() => {
-                    const { pnl, pnlPercent, remainingDays, ratio, isBlown } = calculateCopyPnL(sub.started_at, Number(sub.allocated_amount))
+                    const subTrades = copiedTrades.filter(t => t.master_name === trader.display_name)
+                    const openTrades = subTrades.filter(t => t.status === "open")
+                    const closedTrades = subTrades.filter(t => t.status !== "open")
+                    const totalSubPnl = subTrades.reduce((sum, t) => sum + (t.status === "open" ? (t.unrealized_pnl ?? 0) : (t.profit ?? 0)), 0)
+                    const subWins = closedTrades.filter(t => (t.profit ?? 0) > 0).length
+                    const remainingDays = getLockRemainingDays(sub.started_at)
+                    const daysActive = Math.max(0, 5 - remainingDays)
+
                     return (
                       <div className="animate-fadeIn">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Timer size={14} className="text-[#D4A843]" />
                             <span className="text-xs text-[#A0A0B0]">
-                              {isBlown ? "Entry Expired" : `${Math.floor(remainingDays)}d ${Math.floor((remainingDays % 1) * 24)}h remaining`}
+                              {remainingDays > 0 ? `${remainingDays}d lock remaining` : `${daysActive.toFixed(1)}d active`} • {subTrades.length} trades copied
                             </span>
                           </div>
-                          <div className={cn("text-sm font-bold", isBlown ? "text-[#FF1744]" : pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
-                            {isBlown ? "-100.00%" : `${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(2)}%`}
-                            <span className="text-xs ml-1 opacity-80">
-                              {isBlown ? "($0.00)" : `($${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)})`}
-                            </span>
+                          <div className={cn("text-sm font-bold", totalSubPnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                            {totalSubPnl >= 0 ? "+" : ""}${totalSubPnl.toFixed(2)}
                           </div>
                         </div>
-                        <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                          <div
-                            className={cn("h-full rounded-full transition-all duration-700", isBlown ? "bg-[#FF1744]" : pnl >= 0 ? "bg-[#00C853]" : "bg-[#FF1744]")}
-                            style={{ width: isBlown ? "100%" : `${ratio * 100}%` }}
-                          />
+                        <div className="flex gap-3 text-[10px] text-[#A0A0B0]">
+                          <span>Open: <strong className="text-[#F5F5F5]">{openTrades.length}</strong></span>
+                          <span>Closed: <strong className="text-[#F5F5F5]">{closedTrades.length}</strong></span>
+                          <span>Wins: <strong className="text-[#00C853]">{subWins}</strong></span>
+                          <span>Losses: <strong className="text-[#FF1744]">{closedTrades.length - subWins}</strong></span>
                         </div>
-                        <div className="flex justify-between text-[10px] text-[#A0A0B0] mt-1">
-                          <span>Entry Day 1</span>
-                          <span>{isBlown ? "Blown" : "Day " + Math.min(Math.floor(ratio * 5) + 1, 5)}</span>
-                          <span>Day 5</span>
-                        </div>
-                        {isBlown && (
-                          <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[#FF1744]/10 border border-[#FF1744]/20">
-                            <ZapOff size={14} className="text-[#FF1744] shrink-0" />
-                            <span className="text-xs text-[#FF1744] font-medium">Account blown — all funds lost</span>
-                          </div>
-                        )}
                       </div>
                     )
                   })()}
@@ -683,6 +701,20 @@ export default function CopyTradingPage() {
           )
         })}
       </div>
+
+      {/* Performance Analytics */}
+      {subscriptions.length > 0 && (
+        <div className="mt-8">
+          <CopyTradingAnalytics trades={copiedTrades} />
+        </div>
+      )}
+
+      {/* Trade History */}
+      {copiedTrades.length > 0 && (
+        <div className="mt-8">
+          <CopyTradingHistory trades={copiedTrades} />
+        </div>
+      )}
 
       <Dialog open={showFollowDialog} onClose={() => !followLoading && setShowFollowDialog(false)} title="Copy Trader">
         {followTarget && (

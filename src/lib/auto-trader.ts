@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabase/admin"
 import { getRealTimePrice } from "./prices"
+import { notifyTradeCopied } from "./notifications"
 
 const ALPHA_TRADER_MASTER_NAME = "AlphaTrader"
 
@@ -105,12 +106,12 @@ export async function executeSignal(
     .update({ total_trades: (master.total_trades || 0) + 1 })
     .eq("id", master.id)
 
-  const copiedTo = await copyTradeToFollowers(trade.id, master.id, signal)
+  const copiedTo = await copyTradeToFollowers(trade.id, master.id, master.display_name, signal)
 
   return { success: true, tradeId: trade.id, copiedTo }
 }
 
-export async function copyTradeToFollowers(tradeId: string, masterTraderId: string, signal?: { id: string }): Promise<number> {
+export async function copyTradeToFollowers(tradeId: string, masterTraderId: string, masterName?: string, signal?: { id: string }): Promise<number> {
   const { data: subscriptions } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .select("*")
@@ -127,6 +128,13 @@ export async function copyTradeToFollowers(tradeId: string, masterTraderId: stri
 
   if (!masterTrade) return 0
 
+  // Get master name for notifications if not provided
+  if (!masterName) {
+    const master = await getMasterById(masterTraderId)
+    masterName = master?.display_name || "Unknown"
+  }
+  const resolvedMasterName: string = masterName ?? "Unknown"
+
   let copiedCount = 0
 
   for (const sub of subscriptions) {
@@ -141,7 +149,7 @@ export async function copyTradeToFollowers(tradeId: string, masterTraderId: stri
     const allocationFactor = (sub.allocation_percentage || 100) / 100
     const followerVolume = Math.max(0.01, masterTrade.volume * allocationFactor)
 
-    await supabaseAdmin.from("trades").insert({
+    const { data: copiedTrade, error: insertErr } = await supabaseAdmin.from("trades").insert({
       user_id: sub.follower_id,
       account_id: followerMT.id,
       master_trade_id: masterTrade.id,
@@ -154,8 +162,20 @@ export async function copyTradeToFollowers(tradeId: string, masterTraderId: stri
       status: "open",
       is_ai_generated: !!signal,
       ...(signal ? { signal_id: signal.id } : {}),
-    })
-    copiedCount++
+    }).select().single()
+
+    if (!insertErr && copiedTrade) {
+      // Send notification to follower (fire and forget)
+      notifyTradeCopied(
+        sub.follower_id,
+        resolvedMasterName,
+        masterTrade.symbol,
+        masterTrade.type,
+        followerVolume,
+        copiedTrade.id
+      ).catch(() => {})
+      copiedCount++
+    }
   }
 
   return copiedCount

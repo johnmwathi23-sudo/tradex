@@ -10,6 +10,7 @@ import {
   Repeat, Settings, LogOut, Wallet, ArrowDownLeft, Terminal, Shield
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { NotificationBell } from "@/components/notification-bell"
 
 const sidebarLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -143,6 +144,9 @@ export default function DashboardLayout({
       </aside>
 
       <main className="flex-1 lg:ml-64 p-4 sm:p-6 pb-20 lg:pb-6 min-w-0">
+        <div className="flex items-center justify-end mb-4 lg:mb-6">
+          <NotificationBell />
+        </div>
         {isAdminRoute && !isAdmin && (
           <div className="text-center py-12">
             <p className="text-sm text-[#FF1744]">Access denied. Admin privileges required.</p>
