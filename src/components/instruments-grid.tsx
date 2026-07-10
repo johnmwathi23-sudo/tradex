@@ -1,3 +1,5 @@
+"use client"
+
 import { Card } from "@/components/ui/card"
 import { 
   DollarSign, BarChart3, Gem, Coins, Flame, LineChart 

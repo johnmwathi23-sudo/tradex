@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
-import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign, Bot, Zap, Wallet, CheckCircle, XCircle, ExternalLink, Loader2, Save, RefreshCw, BarChart3, Send } from "lucide-react"
+import { Users, FileText, UserCheck, TrendingUp, Activity, DollarSign, Bot, Zap, Wallet, CheckCircle, XCircle, ExternalLink, Loader2, Save, RefreshCw, BarChart3, Send, Coins, Edit3 } from "lucide-react"
 import dynamic from "next/dynamic"
 
 const TradingViewChart = dynamic(() => import("@/components/tradingview-chart"), { ssr: false })
@@ -96,12 +96,23 @@ export default function AdminPage() {
   const [executingManual, setExecutingManual] = useState(false)
   const [manualResult, setManualResult] = useState("")
 
+  const [globalMinAlloc, setGlobalMinAlloc] = useState(200)
+  const [savingGlobalMin, setSavingGlobalMin] = useState(false)
+  const [globalMinMsg, setGlobalMinMsg] = useState("")
+
+  const [allTrades, setAllTrades] = useState<any[]>([])
+  const [tradesPnlLoading, setTradesPnlLoading] = useState(false)
+  const [editingPnl, setEditingPnl] = useState<Record<string, string>>({})
+  const [editingStatus, setEditingStatus] = useState<Record<string, string>>({})
+  const [savingPnlId, setSavingPnlId] = useState<string | null>(null)
+
   useEffect(() => {
     fetch("/api/admin/stats").then((r) => r.json()).then(setStats).catch(() => {})
     fetchSignals()
     fetchDeposits()
     fetchMaster()
     fetchOpenTrades()
+    fetchAllTrades()
   }, [])
 
   async function fetchMaster() {
@@ -279,6 +290,65 @@ export default function AdminPage() {
     } finally {
       setExecutingManual(false)
     }
+  }
+
+  async function handleGlobalMinAllocation() {
+    setSavingGlobalMin(true)
+    setGlobalMinMsg("")
+    try {
+      const res = await fetch("/api/admin/min-allocation", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minInvestment: globalMinAlloc }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setGlobalMinMsg(`Updated ${data.updated} traders successfully`)
+    } catch (err: any) {
+      setGlobalMinMsg("Error: " + err.message)
+    } finally {
+      setSavingGlobalMin(false)
+    }
+  }
+
+  async function fetchAllTrades() {
+    setTradesPnlLoading(true)
+    try {
+      const res = await fetch("/api/admin/trades/pnl")
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        setAllTrades(data)
+        const pnl: Record<string, string> = {}
+        const st: Record<string, string> = {}
+        data.forEach((t: any) => {
+          pnl[t.id] = t.profit != null ? String(t.profit) : ""
+          st[t.id] = t.status
+        })
+        setEditingPnl(pnl)
+        setEditingStatus(st)
+      }
+    } catch {}
+    setTradesPnlLoading(false)
+  }
+
+  async function saveTradePnl(tradeId: string) {
+    setSavingPnlId(tradeId)
+    try {
+      const body: any = { trade_id: tradeId }
+      if (editingPnl[tradeId] !== undefined && editingPnl[tradeId] !== "") {
+        body.profit = parseFloat(editingPnl[tradeId])
+      }
+      if (editingStatus[tradeId] !== undefined) {
+        body.status = editingStatus[tradeId]
+      }
+      const res = await fetch("/api/admin/trades/pnl", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) fetchAllTrades()
+    } catch {}
+    setSavingPnlId(null)
   }
 
   const cards = [
@@ -559,6 +629,37 @@ export default function AdminPage() {
 
       {master && (
         <Card className="p-6 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-[#D4A843]/20 flex items-center justify-center">
+              <Coins size={20} className="text-[#D4A843]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-[#F5F5F5]">Global Minimum Allocation</h2>
+              <p className="text-xs text-[#A0A0B0]">Set minimum investment for ALL master traders at once</p>
+            </div>
+          </div>
+          <div className="flex items-end gap-4">
+            <div className="flex-1 max-w-xs">
+              <label className="text-xs text-[#A0A0B0] block mb-1">Minimum Allocation ($)</label>
+              <input type="number" value={globalMinAlloc} onChange={(e) => setGlobalMinAlloc(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none" />
+            </div>
+            <button onClick={handleGlobalMinAllocation} disabled={savingGlobalMin || !globalMinAlloc}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#E5C05A] text-[#0A0B0F] text-sm font-semibold hover:opacity-90 transition disabled:opacity-50">
+              {savingGlobalMin ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {savingGlobalMin ? "Updating..." : "Set for All Traders"}
+            </button>
+          </div>
+          {globalMinMsg && (
+            <div className={`mt-3 p-3 rounded-xl text-sm ${globalMinMsg.startsWith("Error") ? "bg-[#FF1744]/10 border border-[#FF1744]/20 text-[#FF1744]" : "bg-[#00C853]/10 border border-[#00C853]/20 text-[#00C853]"}`}>
+              {globalMinMsg}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {master && (
+        <Card className="p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#00C853]/20 flex items-center justify-center">
@@ -674,6 +775,69 @@ export default function AdminPage() {
             {executingManual ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {executingManual ? "Executing..." : "Execute & Copy to Followers"}
           </button>
+        </Card>
+      )}
+
+      {master && (
+        <Card className="p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#FF1744]/20 flex items-center justify-center">
+                <Edit3 size={20} className="text-[#FF1744]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#F5F5F5]">Trade P&L Editor</h2>
+                <p className="text-xs text-[#A0A0B0]">Edit profit/loss and status on any trade</p>
+              </div>
+            </div>
+            <button onClick={fetchAllTrades} disabled={tradesPnlLoading}
+              className="p-2 rounded-lg bg-white/5 text-[#A0A0B0] hover:text-[#D4A843] hover:bg-[#D4A843]/10 transition disabled:opacity-50">
+              <RefreshCw size={16} className={tradesPnlLoading ? "animate-spin" : ""} />
+            </button>
+          </div>
+
+          {allTrades.length === 0 ? (
+            <p className="text-sm text-[#A0A0B0]">No trades found</p>
+          ) : (
+            <div className="space-y-2">
+              {allTrades.slice(0, 20).map((t: any) => (
+                <div key={t.id} className="p-3 rounded-xl bg-[#0A0B0F] border border-white/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-[#F5F5F5]">
+                      {t.symbol} <span className={t.type === "buy" ? "text-[#00C853]" : "text-[#FF1744]"}>{t.type.toUpperCase()}</span>
+                      <span className="text-[#A0A0B0] font-normal"> {t.volume} lots</span>
+                      {t.profiles && <span className="text-[#A0A0B0] font-normal ml-2">— {t.profiles.email?.split("@")[0]}</span>}
+                    </div>
+                    <span className={`text-xs font-semibold ${(t.profit || 0) >= 0 ? "text-[#00C853]" : "text-[#FF1744]"}`}>
+                      {(t.profit || 0) >= 0 ? "+" : ""}${(t.profit || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-[#A0A0B0] block mb-1">P&L ($)</label>
+                      <input type="number" step="any" value={editingPnl[t.id] ?? ""} onChange={(e) => setEditingPnl({ ...editingPnl, [t.id]: e.target.value })}
+                        className="w-full px-2 py-1.5 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-xs focus:border-[#D4A843]/50 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-[#A0A0B0] block mb-1">Status</label>
+                      <select value={editingStatus[t.id] ?? t.status} onChange={(e) => setEditingStatus({ ...editingStatus, [t.id]: e.target.value })}
+                        className="w-full px-2 py-1.5 rounded-lg bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-xs focus:border-[#D4A843]/50 focus:outline-none">
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                        <option value="pending">Pending</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button onClick={() => saveTradePnl(t.id)} disabled={savingPnlId === t.id}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#D4A843]/10 text-[#D4A843] text-xs font-medium hover:bg-[#D4A843]/20 transition disabled:opacity-50">
+                        {savingPnlId === t.id ? "Saving..." : "Update"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 

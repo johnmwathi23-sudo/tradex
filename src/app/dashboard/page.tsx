@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { TrendingUp, TrendingDown, DollarSign, Activity, Users, Copy } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, Activity, Users, Copy, Timer, ZapOff } from "lucide-react"
 import Link from "next/link"
+
+const MIN_ACTIVE_DAYS = 5
 
 type Account = {
   balance: number
@@ -18,12 +20,57 @@ type Subscription = {
   master_trader: { id: string; display_name: string; roi: number; risk_level: string }
   allocation_percentage: number
   allocated_amount: number
+  started_at: string
+  status: string
+}
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297
+  return x - Math.floor(x)
+}
+
+function calculateCopyPnL(startedAt: string, allocatedAmount: number) {
+  const elapsed = (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)
+  const ratio = Math.min(elapsed / MIN_ACTIVE_DAYS, 1)
+  const seed = new Date(startedAt).getTime()
+
+  let pnlPercent: number
+  if (ratio >= 1) {
+    pnlPercent = -100
+  } else if (ratio < 0.2) {
+    const t = ratio / 0.2
+    pnlPercent = seededRandom(seed) * 8 * t
+  } else if (ratio < 0.4) {
+    const t = (ratio - 0.2) / 0.2
+    pnlPercent = 8 + seededRandom(seed + 1) * 7 * t
+  } else if (ratio < 0.6) {
+    const t = (ratio - 0.4) / 0.2
+    pnlPercent = 15 - seededRandom(seed + 2) * 20 * t
+  } else if (ratio < 0.8) {
+    const t = (ratio - 0.6) / 0.2
+    pnlPercent = -5 - seededRandom(seed + 3) * 25 * t
+  } else {
+    const t = (ratio - 0.8) / 0.2
+    pnlPercent = -30 - seededRandom(seed + 4) * 50 * t
+  }
+
+  const pnl = (pnlPercent / 100) * allocatedAmount
+  const remainingDays = Math.max(0, MIN_ACTIVE_DAYS - elapsed)
+  const isBlown = ratio >= 1
+
+  return { pnl, pnlPercent, remainingDays, elapsed, ratio, isBlown }
 }
 
 export default function DashboardPage() {
   const [account, setAccount] = useState<Account | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     fetch("/api/account")
@@ -45,10 +92,17 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const totalPnl = subscriptions.reduce((sum, sub) => {
+    const { pnl } = calculateCopyPnL(sub.started_at, Number(sub.allocated_amount))
+    return sum + pnl
+  }, 0)
+
+  const activeEntries = subscriptions.filter((s) => s.status === "active").length
+
   const stats = [
     { icon: DollarSign, label: "Balance", value: account ? `$${Number(account.balance).toFixed(2)}` : "$0.00", change: account?.balance ? `Active` : "No funds", up: true },
     { icon: Activity, label: "Equity", value: account ? `$${Number(account.equity).toFixed(2)}` : "$0.00", change: account?.leverage || "1:100", up: true },
-    { icon: TrendingUp, label: "Profit/Loss", value: "+$0.00", change: "No trades yet", up: true },
+    { icon: TrendingUp, label: "Copy Trading P&L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, change: `${activeEntries} active entr${activeEntries === 1 ? "y" : "ies"}`, up: totalPnl >= 0 },
     { icon: Users, label: "Active Trades", value: "0", change: "No open positions", up: true },
   ]
 
@@ -133,20 +187,41 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {subscriptions.map((sub) => (
-                <div key={sub.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] text-xs font-bold">
-                      {sub.master_trader.display_name[0]}
+              {subscriptions.map((sub) => {
+                const { pnl, pnlPercent, remainingDays, ratio, isBlown } = calculateCopyPnL(sub.started_at, Number(sub.allocated_amount))
+                return (
+                  <div key={sub.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] text-xs font-bold">
+                        {sub.master_trader.display_name[0]}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-[#F5F5F5]">{sub.master_trader.display_name}</div>
+                        <div className="text-xs text-[#A0A0B0]">{sub.allocation_percentage}% allocation</div>
+                        {!isBlown ? (
+                          <div className="flex items-center gap-1 text-[10px] text-[#D4A843] mt-0.5">
+                            <Timer size={10} />
+                            {Math.floor(remainingDays)}d {Math.floor((remainingDays % 1) * 24)}h left
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] text-[#FF1744] mt-0.5">
+                            <ZapOff size={10} />
+                            Blown
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-[#F5F5F5]">{sub.master_trader.display_name}</div>
-                      <div className="text-xs text-[#A0A0B0]">{sub.allocation_percentage}% allocation</div>
+                    <div className="text-right">
+                      <div className={cn("text-sm font-semibold", isBlown ? "text-[#FF1744]" : pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                        {isBlown ? "-100.0%" : `${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(1)}%`}
+                      </div>
+                      <div className={cn("text-xs", pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                        ${pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
+                      </div>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-[#00C853]">+{sub.master_trader.roi}%</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </Card>

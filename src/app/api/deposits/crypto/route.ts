@@ -8,8 +8,8 @@ export async function POST(req: Request) {
 
   const { amount, tx_hash, proof_url } = await req.json()
 
-  if (!amount || amount < 10) {
-    return NextResponse.json({ error: "Minimum deposit is $10" }, { status: 400 })
+  if (!amount || amount < 200) {
+    return NextResponse.json({ error: "Minimum deposit is $200" }, { status: 400 })
   }
   if (!tx_hash || typeof tx_hash !== "string") {
     return NextResponse.json({ error: "Transaction hash is required" }, { status: 400 })

@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Terminal, Plus, Trash2, Star, Check, X, Copy, Upload, FileText } from "lucide-react"
+import { Terminal, Plus, Trash2, Star, Copy } from "lucide-react"
 
 type MtAccount = {
   id: string
@@ -31,12 +31,6 @@ export default function MtAccountsPage() {
   const [error, setError] = useState("")
   const [demoResult, setDemoResult] = useState<any>(null)
 
-  const [kycStatus, setKycStatus] = useState<string | null>(null)
-  const [kycFile, setKycFile] = useState<File | null>(null)
-  const [kycUploading, setKycUploading] = useState(false)
-  const [kycFetched, setKycFetched] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   async function fetchAccounts() {
     try {
       const res = await fetch("/api/mt/accounts")
@@ -48,36 +42,6 @@ export default function MtAccountsPage() {
   }
 
   useEffect(() => { fetchAccounts() }, [])
-
-  async function fetchKycStatus() {
-    try {
-      const res = await fetch("/api/kyc/status")
-      const data = await res.json()
-      setKycStatus(data.kyc_status)
-    } catch {} finally {
-      setKycFetched(true)
-    }
-  }
-
-  async function handleKycUpload() {
-    if (!kycFile) return
-    setKycUploading(true)
-    setError("")
-    try {
-      const formData = new FormData()
-      formData.append("file", kycFile)
-      const res = await fetch("/api/kyc/upload", { method: "POST", body: formData })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setKycFile(null)
-      setKycStatus("submitted")
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setKycUploading(false)
-    }
-  }
 
   async function handleLink(e: React.FormEvent) {
     e.preventDefault()
@@ -140,46 +104,6 @@ export default function MtAccountsPage() {
     await navigator.clipboard.writeText(text)
   }
 
-  function KycUploadForm() {
-    return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <Upload size={40} className="mx-auto mb-3 text-[#D4A843] opacity-70" />
-          <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Verification Required</h3>
-          <p className="text-sm text-[#A0A0B0] mb-4">To open a real account, upload your Kenyan National ID (front and back in one file).</p>
-        </div>
-        <div className="p-4 rounded-xl bg-[#0A0B0F] border border-white/10">
-          <label className="text-sm font-medium text-[#A0A0B0] block mb-2">Kenyan National ID</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            onChange={(e) => setKycFile(e.target.files?.[0] || null)}
-            className="w-full text-sm text-[#A0A0B0] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-[#D4A843]/10 file:text-[#D4A843] hover:file:bg-[#D4A843]/20"
-          />
-          <p className="text-xs text-[#A0A0B0] mt-2">Accepted: JPEG, PNG, WebP, PDF (max 5MB)</p>
-        </div>
-        {kycFile && (
-          <div className="p-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 text-sm text-[#D4A843] flex items-center gap-2">
-            <Check size={16} /> {kycFile.name}
-          </div>
-        )}
-        {error && <div className="p-3 rounded-xl bg-[#FF1744]/10 text-sm text-[#FF1744]">{error}</div>}
-        <button
-          onClick={handleKycUpload}
-          disabled={!kycFile || kycUploading}
-          className="w-full py-3 rounded-xl bg-[#D4A843] text-[#0A0B0F] font-semibold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {kycUploading ? (
-            <><div className="animate-spin w-4 h-4 border-2 border-[#0A0B0F] border-t-transparent rounded-full" /> Uploading...</>
-          ) : (
-            <><Upload size={16} /> Submit for Verification</>
-          )}
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -195,7 +119,7 @@ export default function MtAccountsPage() {
             <Terminal size={16} /> Demo Account
           </button>
           <button
-            onClick={() => { setShowLink(!showLink); setShowDemo(false); setDemoResult(null); setError(""); if (!showLink) { setKycFetched(false); fetchKycStatus() } }}
+            onClick={() => { setShowLink(!showLink); setShowDemo(false); setDemoResult(null); setError("") }}
             className="px-4 py-2 rounded-xl bg-[#2196F3]/10 text-[#2196F3] text-sm font-medium hover:bg-[#2196F3]/20 flex items-center gap-2"
           >
             <Plus size={16} /> Open Real Account
@@ -271,13 +195,7 @@ export default function MtAccountsPage() {
 
           {showLink && (
             <>
-              {linkForm.account_type === "real" && !kycFetched && (
-                <div className="flex justify-center py-3 md:py-4">
-                  <div className="animate-spin w-5 h-5 border-2 border-[#D4A843] border-t-transparent rounded-full" />
-                </div>
-              )}
-
-              {linkForm.account_type === "real" && kycStatus === "approved" && (
+              {linkForm.account_type === "real" && (
                 <form onSubmit={handleLink} className="space-y-4">
                   <h3 className="text-lg font-semibold text-[#F5F5F5]">Open Real Account</h3>
                   <p className="text-sm text-[#A0A0B0]">Open a real trading account</p>
@@ -299,7 +217,7 @@ export default function MtAccountsPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Type</label>
-                      <select value={linkForm.account_type} onChange={(e) => { setLinkForm({ ...linkForm, account_type: e.target.value }); if (e.target.value === "real") { setKycFetched(false); fetchKycStatus() } }} className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm">
+                      <select value={linkForm.account_type} onChange={(e) => { setLinkForm({ ...linkForm, account_type: e.target.value }) }} className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm">
                         <option value="real">Real</option>
                         <option value="demo">Demo</option>
                       </select>
@@ -316,32 +234,6 @@ export default function MtAccountsPage() {
                   {error && <div className="p-3 rounded-xl bg-[#FF1744]/10 text-sm text-[#FF1744]">{error}</div>}
                   <button type="submit" className="w-full py-3 rounded-xl bg-[#2196F3] text-white font-semibold text-sm hover:opacity-90">Open Real Account</button>
                 </form>
-              )}
-
-              {linkForm.account_type === "real" && kycStatus === "submitted" && (
-                <div className="text-center py-4 md:py-6">
-                  <FileText size={40} className="mx-auto mb-3 text-[#D4A843] opacity-70" />
-                  <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Under Review</h3>
-                  <p className="text-sm text-[#A0A0B0]">Your Kenyan ID is being reviewed. You'll be able to open a real account once approved.</p>
-                  <div className="mt-4 p-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20">
-                    <p className="text-xs text-[#D4A843]">Status: Submitted — awaiting admin verification</p>
-                  </div>
-                </div>
-              )}
-
-              {linkForm.account_type === "real" && kycStatus === "rejected" && (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <X size={40} className="mx-auto mb-3 text-[#FF1744] opacity-70" />
-                    <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">KYC Rejected</h3>
-                    <p className="text-sm text-[#A0A0B0]">Your Kenyan ID was rejected. Please upload a clear, legible document.</p>
-                  </div>
-                  <KycUploadForm />
-                </div>
-              )}
-
-              {linkForm.account_type === "real" && kycStatus === "pending" && (
-                <KycUploadForm />
               )}
 
               {linkForm.account_type === "demo" && (
@@ -366,7 +258,7 @@ export default function MtAccountsPage() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-[#A0A0B0] block mb-1">Type</label>
-                      <select value={linkForm.account_type} onChange={(e) => { setLinkForm({ ...linkForm, account_type: e.target.value }); if (e.target.value === "real") { setKycFetched(false); fetchKycStatus() } }} className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm">
+                      <select value={linkForm.account_type} onChange={(e) => { setLinkForm({ ...linkForm, account_type: e.target.value }) }} className="w-full px-3 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm">
                         <option value="demo">Demo</option>
                         <option value="real">Real</option>
                       </select>

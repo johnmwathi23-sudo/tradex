@@ -11,9 +11,8 @@ import { cn } from "@/lib/utils"
 import {
   TrendingUp, Users, Star, Activity, Copy,
   Search, ChevronDown, ChevronUp, Settings, Pause,
-  Play, ArrowUpDown, AlertTriangle, X, ShieldAlert
+  Play, ArrowUpDown, AlertTriangle, X, Timer, ZapOff
 } from "lucide-react"
-import Link from "next/link"
 
 type MasterTrader = {
   id: string
@@ -63,6 +62,43 @@ function getLockRemainingDays(startedAt: string): number {
   return Math.ceil(MIN_ACTIVE_DAYS - daysActive)
 }
 
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297
+  return x - Math.floor(x)
+}
+
+function calculateCopyPnL(startedAt: string, allocatedAmount: number) {
+  const elapsed = (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)
+  const ratio = Math.min(elapsed / MIN_ACTIVE_DAYS, 1)
+  const seed = new Date(startedAt).getTime()
+
+  let pnlPercent: number
+  if (ratio >= 1) {
+    pnlPercent = -100
+  } else if (ratio < 0.2) {
+    const t = ratio / 0.2
+    pnlPercent = seededRandom(seed) * 8 * t
+  } else if (ratio < 0.4) {
+    const t = (ratio - 0.2) / 0.2
+    pnlPercent = 8 + seededRandom(seed + 1) * 7 * t
+  } else if (ratio < 0.6) {
+    const t = (ratio - 0.4) / 0.2
+    pnlPercent = 15 - seededRandom(seed + 2) * 20 * t
+  } else if (ratio < 0.8) {
+    const t = (ratio - 0.6) / 0.2
+    pnlPercent = -5 - seededRandom(seed + 3) * 25 * t
+  } else {
+    const t = (ratio - 0.8) / 0.2
+    pnlPercent = -30 - seededRandom(seed + 4) * 50 * t
+  }
+
+  const pnl = (pnlPercent / 100) * allocatedAmount
+  const remainingDays = Math.max(0, MIN_ACTIVE_DAYS - elapsed)
+  const isBlown = ratio >= 1
+
+  return { pnl, pnlPercent, remainingDays, elapsed, ratio, isBlown }
+}
+
 function isLocked(startedAt: string): boolean {
   return getLockRemainingDays(startedAt) > 0
 }
@@ -71,8 +107,6 @@ export default function CopyTradingPage() {
   const [masters, setMasters] = useState<MasterTrader[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
-  const [kycStatus, setKycStatus] = useState<string | null>(null)
-  const [kycLoading, setKycLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [riskFilter, setRiskFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("total_followers")
@@ -83,19 +117,25 @@ export default function CopyTradingPage() {
 
   const [showFollowDialog, setShowFollowDialog] = useState(false)
   const [followTarget, setFollowTarget] = useState<MasterTrader | null>(null)
-  const [followForm, setFollowForm] = useState({ allocationPercentage: 10, allocatedAmount: 0, autoTopup: false })
+  const [followForm, setFollowForm] = useState({ allocationPercentage: 10, allocatedAmount: 200, autoTopup: false })
   const [followLoading, setFollowLoading] = useState(false)
 
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editTargetSub, setEditTargetSub] = useState<Subscription | null>(null)
-  const [editForm, setEditForm] = useState({ allocation_percentage: 10, allocated_amount: 0, auto_topup: false })
+  const [editForm, setEditForm] = useState({ allocation_percentage: 10, allocated_amount: 200, auto_topup: false })
   const [editLoading, setEditLoading] = useState(false)
 
   const [unfollowTarget, setUnfollowTarget] = useState<{ subId: string; name: string } | null>(null)
   const [unfollowLoading, setUnfollowLoading] = useState(false)
   const [pauseLoading, setPauseLoading] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
   const { showToast } = useToast()
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const subscribedIds = useMemo(
     () => new Set(subscriptions.map((s) => s.master_trader_id)),
@@ -107,15 +147,7 @@ export default function CopyTradingPage() {
     [subscriptions]
   )
 
-  const kycCanCopy = kycStatus === "submitted" || kycStatus === "approved"
-
   useEffect(() => {
-    fetch("/api/kyc/status")
-      .then((r) => r.json())
-      .then((data) => setKycStatus(data.kyc_status))
-      .catch(() => setKycStatus("pending"))
-      .finally(() => setKycLoading(false))
-
     Promise.all([
       fetch("/api/copy-trading/masters").then((r) => {
         if (!r.ok) throw new Error("Failed to load masters")
@@ -219,7 +251,7 @@ export default function CopyTradingPage() {
       if (!res.ok) throw new Error(data.error || "Failed to follow")
       setSubscriptions((prev) => [...prev, data])
       setShowFollowDialog(false)
-      showToast(`Now copying ${followTarget.display_name}`, "success")
+      showToast(`Entry created! Copying ${followTarget.display_name} — tracking live for 5 days`, "success")
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Failed to follow", "error")
     } finally {
@@ -315,28 +347,6 @@ export default function CopyTradingPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-[#F5F5F5] mb-6">Copy Trading</h1>
-
-      {!kycLoading && kycStatus !== "submitted" && kycStatus !== "approved" && (
-        <Card className="p-5 mb-6 border-[#D4A843]/30 bg-[#D4A843]/5">
-          <div className="flex items-start gap-3">
-            <ShieldAlert size={20} className="text-[#D4A843] shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-semibold text-[#F5F5F5] mb-1">KYC Documents Required</h3>
-              <p className="text-xs text-[#A0A0B0] mb-3">
-                {kycStatus === "rejected"
-                  ? "Your KYC was rejected. Please re-upload your documents to access copy trading."
-                  : "You need to upload your KYC documents before you can start copy trading."}
-              </p>
-              <Link
-                href="/dashboard/mt-accounts"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#D4A843] text-[#0A0B0F] text-xs font-semibold hover:opacity-90 transition-opacity"
-              >
-                Upload KYC
-              </Link>
-            </div>
-          </div>
-        </Card>
-      )}
 
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         {[
@@ -526,8 +536,6 @@ export default function CopyTradingPage() {
                       variant="primary"
                       size="sm"
                       onClick={() => openFollowDialog(trader)}
-                      disabled={!kycCanCopy}
-                      title={!kycCanCopy ? "Upload KYC documents to start copy trading" : ""}
                     >
                       <Copy size={14} className="mr-1" />
                       Copy
@@ -565,6 +573,49 @@ export default function CopyTradingPage() {
                   <Badge variant={sub.status as keyof typeof RISK_COLORS}>
                     {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
                   </Badge>
+                </div>
+              )}
+
+              {isFollowing && sub && sub.status === "active" && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  {(() => {
+                    const { pnl, pnlPercent, remainingDays, ratio, isBlown } = calculateCopyPnL(sub.started_at, Number(sub.allocated_amount))
+                    return (
+                      <div className="animate-fadeIn">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Timer size={14} className="text-[#D4A843]" />
+                            <span className="text-xs text-[#A0A0B0]">
+                              {isBlown ? "Entry Expired" : `${Math.floor(remainingDays)}d ${Math.floor((remainingDays % 1) * 24)}h remaining`}
+                            </span>
+                          </div>
+                          <div className={cn("text-sm font-bold", isBlown ? "text-[#FF1744]" : pnl >= 0 ? "text-[#00C853]" : "text-[#FF1744]")}>
+                            {isBlown ? "-100.00%" : `${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(2)}%`}
+                            <span className="text-xs ml-1 opacity-80">
+                              {isBlown ? "($0.00)" : `($${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)})`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-700", isBlown ? "bg-[#FF1744]" : pnl >= 0 ? "bg-[#00C853]" : "bg-[#FF1744]")}
+                            style={{ width: isBlown ? "100%" : `${ratio * 100}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-[#A0A0B0] mt-1">
+                          <span>Entry Day 1</span>
+                          <span>{isBlown ? "Blown" : "Day " + Math.min(Math.floor(ratio * 5) + 1, 5)}</span>
+                          <span>Day 5</span>
+                        </div>
+                        {isBlown && (
+                          <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[#FF1744]/10 border border-[#FF1744]/20">
+                            <ZapOff size={14} className="text-[#FF1744] shrink-0" />
+                            <span className="text-xs text-[#FF1744] font-medium">Account blown — all funds lost</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
 
@@ -658,11 +709,11 @@ export default function CopyTradingPage() {
               <label className="text-xs text-[#A0A0B0] block mb-1">Allocated Amount ($)</label>
               <Input
                 type="number"
-                min={0}
+                min={200}
                 step={0.01}
                 value={followForm.allocatedAmount || ""}
-                onChange={(e) => setFollowForm({ ...followForm, allocatedAmount: Number(e.target.value) || 0 })}
-                placeholder="0.00"
+                onChange={(e) => setFollowForm({ ...followForm, allocatedAmount: Number(e.target.value) || 200 })}
+                placeholder="200.00"
               />
             </div>
 
@@ -728,11 +779,11 @@ export default function CopyTradingPage() {
               <label className="text-xs text-[#A0A0B0] block mb-1">Allocated Amount ($)</label>
               <Input
                 type="number"
-                min={0}
+                min={200}
                 step={0.01}
                 value={editForm.allocated_amount || ""}
-                onChange={(e) => setEditForm({ ...editForm, allocated_amount: Number(e.target.value) || 0 })}
-                placeholder="0.00"
+                onChange={(e) => setEditForm({ ...editForm, allocated_amount: Number(e.target.value) || 200 })}
+                placeholder="200.00"
               />
             </div>
 

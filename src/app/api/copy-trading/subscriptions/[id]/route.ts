@@ -32,8 +32,8 @@ export async function PATCH(
 
   if (body.allocated_amount != null) {
     const amt = Number(body.allocated_amount)
-    if (isNaN(amt) || amt < 0) {
-      return NextResponse.json({ error: "Invalid allocated amount" }, { status: 400 })
+    if (isNaN(amt) || amt < 200) {
+      return NextResponse.json({ error: "Minimum allocated amount is $200" }, { status: 400 })
     }
     updates.allocated_amount = amt
   }

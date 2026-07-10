@@ -1,5 +1,7 @@
-import { Users, Globe, Award, TrendingUp } from "lucide-react"
+"use client"
 
+import { Users, Globe, Award, TrendingUp } from "lucide-react"
+ 
 const stats = [
   { icon: Users, value: "50,000+", label: "Active Traders" },
   { icon: Globe, value: "120+", label: "Countries" },

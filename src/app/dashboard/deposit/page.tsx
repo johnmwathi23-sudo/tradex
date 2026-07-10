@@ -182,6 +182,7 @@ export default function DepositPage() {
                 className="w-full px-4 py-2.5 rounded-xl bg-[#0A0B0F] border border-white/10 text-[#F5F5F5] text-sm focus:border-[#D4A843]/50 focus:outline-none"
                 required
               />
+              <p className="text-xs text-[#A0A0B0] mt-1">Minimum deposit: $200</p>
             </div>
 
             <div>

@@ -23,14 +23,14 @@ export async function GET() {
     return NextResponse.json([])
   }
 
-  const masterIds = subscriptions.map((s) => s.master_trader_id)
+  const masterIds = (subscriptions as { master_trader_id: string }[]).map((s) => s.master_trader_id)
 
   const { data: masters } = await supabase
     .from("master_traders")
     .select("id, user_id, display_name")
     .in("id", masterIds)
 
-  const masterUserIds = masters?.map((m) => m.user_id) ?? []
+  const masterUserIds = (masters as { user_id: string; display_name: string }[] | null)?.map((m) => m.user_id) ?? []
 
   if (masterUserIds.length === 0) {
     return NextResponse.json([])
@@ -44,8 +44,8 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(50)
 
-  const tradesWithMaster = trades?.map((trade) => {
-    const master = masters?.find((m) => m.user_id === trade.user_id)
+  const tradesWithMaster = (trades as Record<string, unknown>[] | null)?.map((trade) => {
+    const master = (masters as { user_id: string; display_name: string }[] | null)?.find((m) => m.user_id === trade.user_id)
     return { ...trade, master_name: master?.display_name ?? "Unknown" }
   })
 

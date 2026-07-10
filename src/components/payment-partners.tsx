@@ -1,5 +1,7 @@
-import { Wallet } from "lucide-react"
+"use client"
 
+import { Wallet } from "lucide-react"
+ 
 export function PaymentPartners() {
   return (
     <section className="py-10 md:py-16">
