@@ -465,15 +465,15 @@ export default function CopyTradingPage() {
                     {trader.bio && (
                       <p className="text-xs text-[#A0A0B0] mt-0.5 break-words">{trader.bio}</p>
                     )}
-                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-x-4 gap-y-1 text-xs text-[#A0A0B0] mt-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-[#A0A0B0] mt-1.5">
                       <span className="flex items-center gap-1">
                         <TrendingUp size={12} className="text-[#00C853]" /> {trader.roi}% ROI
                       </span>
-                      <span className="flex items-center gap-1">{trader.win_rate}% win rate</span>
+                      <span>{trader.win_rate}% win rate</span>
                       <span className="flex items-center gap-1"><Users size={12} /> {trader.total_followers}</span>
-                      <span className="flex items-center gap-1">{trader.total_trades} trades</span>
+                      <span>{trader.total_trades} trades</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-x-4 gap-y-1 mt-1.5 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1.5 text-xs">
                       <Badge variant={trader.risk_level as keyof typeof RISK_COLORS}>
                         {trader.risk_level.charAt(0).toUpperCase() + trader.risk_level.slice(1)} Risk
                       </Badge>
