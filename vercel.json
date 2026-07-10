@@ -3,6 +3,10 @@
     {
       "path": "/api/ai-trading/generate",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/copy-trading/growth",
+      "schedule": "0 14 * * *"
     }
   ]
 }
