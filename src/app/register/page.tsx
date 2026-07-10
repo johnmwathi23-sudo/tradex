@@ -44,7 +44,12 @@ export default function RegisterPage() {
     })
 
     if (authError) {
-      setError(authError.message)
+      // Show a friendlier message for rate limit errors
+      if (authError.message.includes("rate") || authError.message.includes("limit")) {
+        setError("Too many signup attempts. Please wait a few minutes and try again.")
+      } else {
+        setError(authError.message)
+      }
       setLoading(false)
       return
     }
@@ -64,8 +69,17 @@ export default function RegisterPage() {
       }
     }
 
-    router.push("/dashboard")
-    router.refresh()
+    // If email confirmation is enabled, data.session will be null
+    // Show a message instead of redirecting to dashboard
+    if (data.session) {
+      // Auto-confirmed (email confirmation disabled) — go to dashboard
+      router.push("/dashboard")
+      router.refresh()
+    } else {
+      // Email confirmation required — show info message
+      showToast("Account created! Please check your email to verify your account.", "success")
+      setLoading(false)
+    }
   }
 
   return (

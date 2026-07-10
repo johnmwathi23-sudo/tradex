@@ -54,6 +54,10 @@ export async function register(formData: FormData) {
   })
 
   if (error) {
+    // Show a friendlier message for rate limit errors
+    if (error.message.includes("rate") || error.message.includes("limit")) {
+      return { error: "Too many signup attempts. Please wait a few minutes and try again." }
+    }
     return { error: error.message }
   }
 
@@ -71,8 +75,13 @@ export async function register(formData: FormData) {
     }
   }
 
-  revalidatePath("/", "layout")
-  redirect("/dashboard")
+  // If email confirmation is required, session will be null
+  if (data.session) {
+    revalidatePath("/", "layout")
+    redirect("/dashboard")
+  } else {
+    return { success: "Account created! Please check your email to verify your account." }
+  }
 }
 
 export async function logout() {
