@@ -24,8 +24,8 @@ export async function PATCH(
 
   if (body.allocation_percentage != null) {
     const pct = Number(body.allocation_percentage)
-    if (isNaN(pct) || pct < 1 || pct > 100) {
-      return NextResponse.json({ error: "Allocation percentage must be between 1 and 100" }, { status: 400 })
+    if (isNaN(pct) || pct < 75 || pct > 100) {
+      return NextResponse.json({ error: "Allocation percentage must be between 75 and 100" }, { status: 400 })
     }
     updates.allocation_percentage = pct
   }

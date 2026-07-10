@@ -117,7 +117,7 @@ export default function CopyTradingPage() {
 
   const [showFollowDialog, setShowFollowDialog] = useState(false)
   const [followTarget, setFollowTarget] = useState<MasterTrader | null>(null)
-  const [followForm, setFollowForm] = useState({ allocationPercentage: 10, allocatedAmount: 200, autoTopup: false })
+  const [followForm, setFollowForm] = useState({ allocationPercentage: 75, allocatedAmount: 200, autoTopup: false })
   const [followLoading, setFollowLoading] = useState(false)
 
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -226,7 +226,7 @@ export default function CopyTradingPage() {
     setFollowTarget(trader)
     const existing = subMap[trader.id]
     setFollowForm({
-      allocationPercentage: existing?.allocation_percentage ?? 10,
+      allocationPercentage: existing?.allocation_percentage ?? 75,
       allocatedAmount: existing?.allocated_amount ?? 200,
       autoTopup: existing?.auto_topup ?? false,
     })
@@ -701,12 +701,13 @@ export default function CopyTradingPage() {
               label="Allocation Percentage"
               value={followForm.allocationPercentage}
               onChange={(v) => setFollowForm({ ...followForm, allocationPercentage: v })}
-              min={1}
+              min={75}
               max={100}
             />
 
             <div>
               <label className="text-xs text-[#A0A0B0] block mb-1">Allocated Amount ($)</label>
+              <p className="text-xs text-[#A0A0B0] mb-2">Minimum: $200</p>
               <Input
                 type="number"
                 min={200}
@@ -771,12 +772,13 @@ export default function CopyTradingPage() {
               label="Allocation Percentage"
               value={editForm.allocation_percentage}
               onChange={(v) => setEditForm({ ...editForm, allocation_percentage: v })}
-              min={1}
+              min={75}
               max={100}
             />
 
             <div>
               <label className="text-xs text-[#A0A0B0] block mb-1">Allocated Amount ($)</label>
+              <p className="text-xs text-[#A0A0B0] mb-2">Minimum: $200</p>
               <Input
                 type="number"
                 min={200}

@@ -20,8 +20,8 @@ export async function POST(request: Request) {
   }
 
   const allocPct = Number(allocationPercentage)
-  if (isNaN(allocPct) || allocPct < 1 || allocPct > 100) {
-    return NextResponse.json({ error: "Allocation percentage must be between 1 and 100" }, { status: 400 })
+  if (isNaN(allocPct) || allocPct < 75 || allocPct > 100) {
+    return NextResponse.json({ error: "Allocation percentage must be between 75 and 100" }, { status: 400 })
   }
 
   if (allocatedAmount != null && (isNaN(Number(allocatedAmount)) || Number(allocatedAmount) < 200)) {
@@ -30,10 +30,9 @@ export async function POST(request: Request) {
 
   const { data: existing } = await supabaseAdmin
     .from("copy_trade_subscriptions")
-    .select("id, status, allocated_amount, max_drawdown, auto_topup")
+    .select("id, status, allocated_amount, auto_topup")
     .eq("follower_id", user.id)
     .eq("master_trader_id", masterTraderId)
-    .in("status", ["active", "paused"])
     .maybeSingle()
 
   if (existing) {

@@ -16,12 +16,12 @@ async function main() {
 
   const { error: e1 } = await supabase
     .from("master_traders")
-    .update({ display_order: 3 })
+    .update({ display_order: 4 })
     .eq("display_name", "FXPulse")
 
   const { error: e2 } = await supabase
     .from("master_traders")
-    .update({ display_order: 4 })
+    .update({ display_order: 3 })
     .eq("display_name", "Flossin")
 
   if (e1 || e2) { console.error(e1 ?? e2); return }
