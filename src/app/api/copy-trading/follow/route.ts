@@ -28,6 +28,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Minimum allocated amount is $200" }, { status: 400 })
   }
 
+  // Ensure profile exists (profile may not have been created on signup)
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    await supabaseAdmin.from("profiles").insert({
+      id: user.id,
+      email: user.email,
+    })
+  }
+
   const { data: existing } = await supabaseAdmin
     .from("copy_trade_subscriptions")
     .select("id, status, allocated_amount, auto_topup")

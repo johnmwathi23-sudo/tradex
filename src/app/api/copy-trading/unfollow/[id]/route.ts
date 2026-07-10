@@ -21,12 +21,16 @@ export async function POST(
 
   const { data: sub } = await supabaseAdmin
     .from("copy_trade_subscriptions")
-    .select("started_at, status")
+    .select("started_at, status, follower_id")
     .eq("id", id)
     .single()
 
   if (!sub) {
     return NextResponse.json({ error: "Subscription not found" }, { status: 404 })
+  }
+
+  if (sub.follower_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   if (sub.status !== "active") {

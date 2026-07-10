@@ -20,6 +20,22 @@ export async function PATCH(
   }
 
   const body = await _request.json()
+
+  // Verify ownership
+  const { data: subCheck } = await supabaseAdmin
+    .from("copy_trade_subscriptions")
+    .select("follower_id")
+    .eq("id", id)
+    .single()
+
+  if (!subCheck) {
+    return NextResponse.json({ error: "Subscription not found" }, { status: 404 })
+  }
+
+  if (subCheck.follower_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const updates: Record<string, unknown> = {}
 
   if (body.allocation_percentage != null) {
