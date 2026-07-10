@@ -451,12 +451,12 @@ export default function CopyTradingPage() {
               className="p-5 hover:scale-[1.01] transition-transform duration-200 animate-fadeIn will-change-transform"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4A843] to-[#E5C05A] flex items-center justify-center text-[#0A0B0F] font-bold text-lg shrink-0">
                     {trader.display_name[0]}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-full sm:w-auto">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-[#F5F5F5]">{trader.display_name}</h3>
                       {trader.is_verified && <Badge variant="verified">Verified</Badge>}
