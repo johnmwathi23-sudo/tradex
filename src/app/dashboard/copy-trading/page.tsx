@@ -227,7 +227,7 @@ export default function CopyTradingPage() {
     const existing = subMap[trader.id]
     setFollowForm({
       allocationPercentage: existing?.allocation_percentage ?? 10,
-      allocatedAmount: existing?.allocated_amount ?? 0,
+      allocatedAmount: existing?.allocated_amount ?? 200,
       autoTopup: existing?.auto_topup ?? false,
     })
     setShowFollowDialog(true)
